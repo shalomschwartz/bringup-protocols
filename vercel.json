@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/projects", "destination": "/api/projects" },
+    { "source": "/api/contacts", "destination": "/api/contacts" },
+    { "source": "/api/users", "destination": "/api/users" },
+    { "source": "/api/protocol", "destination": "/api/protocol" },
+    { "source": "/api/tasks", "destination": "/api/tasks" }
+  ]
+}

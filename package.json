@@ -1,0 +1,14 @@
+{
+  "name": "bringup-protocols",
+  "version": "1.0.0",
+  "description": "BringUp Protocols — Meeting protocol app connected to Monday.com",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "dotenv": "^16.4.5"
+  }
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BringUp Protocols — הזנת פרוטוקול פגישה</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-avatar">BR</div>
+    <div>
+      <div class="topbar-title">BringUp Protocols</div>
+      <div class="topbar-sub">הזנת פרוטוקול פגישה</div>
+    </div>
+  </div>
+
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step active" data-step="1" onclick="goStep(1)">
+      <div class="step-dot">1</div>
+      פרויקט
+    </div>
+    <div class="step" data-step="2" onclick="goStep(2)">
+      <div class="step-dot">2</div>
+      משתתפים
+    </div>
+    <div class="step" data-step="3" onclick="goStep(3)">
+      <div class="step-dot">3</div>
+      משימות
+    </div>
+    <div class="step" data-step="4" onclick="goStep(4)">
+      <div class="step-dot">4</div>
+      אישור
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="margin-top:12px;font-size:13px;color:#666;">טוען נתונים מ-Monday.com...</div>
+  </div>
+
+  <!-- SCREEN 1: Project -->
+  <div class="screen active" id="screen1">
+    <div style="direction:rtl;text-align:right;margin-bottom:12px;">
+      <div class="wa-bubble">
+        <strong>BringUp Protocols</strong><br>
+        שלום! בחר פרויקט לפרוטוקול הפגישה 👇
+        <div class="wa-time" id="current-time"></div>
+      </div>
+    </div>
+    <div class="label">פרויקט מתוך Monday.com</div>
+    <select class="select" id="project-select" onchange="handleProjectSelect(this.value)">
+      <option value="">— בחר פרויקט —</option>
+    </select>
+    <div id="proj-card" class="project-card" style="display:none;">
+      <div class="proj-name" id="proj-name"></div>
+      <div class="proj-meta" id="proj-status"></div>
+      <div class="proj-meta" id="proj-timeline"></div>
+      <div>
+        <span class="badge" id="proj-badge"></span>
+        <span class="monday-badge">Monday ✓</span>
+      </div>
+    </div>
+    <div class="label">תאריך הפגישה</div>
+    <input type="date" class="input" id="meeting-date" />
+    <div class="label">מיקום / ערוץ</div>
+    <input type="text" class="input" id="meeting-location" placeholder="לדוגמה: באתר הבנייה" />
+    <div class="nav-row">
+      <button class="btn-next" onclick="goStep(2)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Participants -->
+  <div class="screen" id="screen2">
+    <div class="section-title">משתתפים מ-Monday.com</div>
+    <div id="participants-list"></div>
+    <div style="border-top:0.5px solid rgba(0,0,0,0.08);margin:10px 0;"></div>
+    <div class="section-title">הוסף משתתף חדש</div>
+    <div style="display:flex;gap:8px;direction:rtl;">
+      <input class="input" id="new-participant-name" placeholder="שם" style="flex:1;margin-bottom:0;" />
+      <input class="input" id="new-participant-role" placeholder="תפקיד" style="flex:1;margin-bottom:0;" />
+    </div>
+    <button class="add-btn" style="margin-top:8px;" onclick="addParticipant()">+ הוסף לרשימה</button>
+    <div class="nav-row">
+      <button class="btn-next" onclick="goStep(3)">הבא ←</button>
+      <button class="btn-back" onclick="goStep(1)">→ חזרה</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Tasks -->
+  <div class="screen" id="screen3">
+    <button class="rec-btn" id="recbtn" onclick="toggleRec()">
+      <div class="rec-pulse"></div>
+      <span id="rectxt">הקלט משימה חדשה</span>
+    </button>
+    <div class="rec-form" id="rec-form">
+      <div class="label">תיאור המשימה</div>
+      <textarea class="input" id="task-desc" rows="2" style="resize:none;margin-bottom:8px;" placeholder="תאר את המשימה..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;">
+          <div class="label">אחריות</div>
+          <select class="select" id="task-owner" style="margin-bottom:0;"></select>
+        </div>
+        <div style="flex:1;">
+          <div class="label">תאריך יעד</div>
+          <input type="date" class="input" id="task-date" style="margin-bottom:0;" />
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:10px;margin-bottom:0;" onclick="addTask()">+ הוסף משימה</button>
+    </div>
+    <div class="section-title" style="margin-top:4px;">משימות שהוקלטו</div>
+    <div id="tasks-list">
+      <div style="text-align:center;color:#999;font-size:13px;padding:20px 0;">אין משימות עדיין</div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-next" onclick="goStep(4)">לאישור ←</button>
+      <button class="btn-back" onclick="goStep(2)">→ חזרה</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: Confirmation -->
+  <div class="screen" id="screen4">
+    <div class="preview-doc" id="preview-doc">
+      <div class="preview-header" id="preview-title">פרוטוקול פגישה</div>
+      <div class="preview-row"><span class="pr-label">תאריך</span><span class="pr-val" id="preview-date"></span></div>
+      <div class="preview-row"><span class="pr-label">מיקום</span><span class="pr-val" id="preview-location"></span></div>
+      <div class="preview-row"><span class="pr-label">משתתפים</span><span class="pr-val" id="preview-participants"></span></div>
+      <div class="preview-row"><span class="pr-label">משימות</span><span class="pr-val" id="preview-tasks"></span></div>
+    </div>
+    <div style="direction:rtl;text-align:right;margin-bottom:12px;">
+      <div style="font-size:13px;color:#666;margin-bottom:6px;">שליחה ל-Monday.com</div>
+    </div>
+    <div class="send-row">
+      <button class="btn-primary" id="send-monday-btn" onclick="sendToMonday()">
+        <span id="send-monday-text">Monday ↑ שלח ל</span>
+      </button>
+    </div>
+    <div id="send-status" style="display:none;direction:rtl;text-align:center;font-size:13px;padding:10px 0;"></div>
+    <div style="direction:rtl;text-align:center;font-size:12px;color:#666;margin-top:8px;">
+      המשימות יועלו כשורות חדשות לבורד הפרויקט ב-Monday.com
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(3)">→ חזרה</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
