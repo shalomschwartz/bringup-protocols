@@ -936,8 +936,19 @@ function buildPdfHtml(data, bg1, bg2) {
       + '</div>';
   }
 
-  // Footer on last page
-  var footerHtml = '<div style="position:absolute;top:' + (PAGE_H - 85) + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
+  // Footer positioned right below the last task row
+  var footerTop;
+  if (needsP2) {
+    var p2ActualRows = Math.max(p2Tasks.length, 1);
+    footerTop = P2_TABLE_TOP + HEADER_ROW_H + (p2ActualRows * p2RowH) + 20;
+  } else {
+    var p1ActualRows = Math.max(p1Tasks.length, 1);
+    footerTop = tableTop + HEADER_ROW_H + (p1ActualRows * p1RowH) + 20;
+  }
+  // Don't go below the letterhead contact info area
+  footerTop = Math.min(footerTop, PAGE_H - 85);
+
+  var footerHtml = '<div style="position:absolute;top:' + footerTop + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
     + '<div>רשם: ' + escapeHtml(data.recorder || '') + '</div>'
     + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
 
