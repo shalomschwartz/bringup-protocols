@@ -433,7 +433,7 @@ async function stopRecording() {
     setRecState('done');
 
     // Reset to idle after 4 seconds
-    setTimeout(() => { setRecState('idle'); }, 4000);
+    setTimeout(() => { setRecState('idle'); }, 1000);
   } catch (err) {
     // Last resort: add raw text as task
     console.error('Task parsing completely failed:', err);
