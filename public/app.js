@@ -1022,53 +1022,105 @@ function localParseTask(text, participantNames, meetingDate) {
     'ספטמבר': '09', 'אוקטובר': '10', 'נובמבר': '11', 'דצמבר': '12',
   };
 
-  // Pattern: עד ה-25 למרץ 2026 / עד לתאריך 28 למרץ / עד תאריך 25 למרס / בתאריך 25 למרץ
-  const hebrewMonthPattern = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל|של\s+)?(\S+?)(?:\s+(\d{2,4}))?(?:\s|$|,|\.)/);
-  if (hebrewMonthPattern) {
-    const day = hebrewMonthPattern[1].padStart(2, '0');
-    const monthWord = hebrewMonthPattern[2].replace(/^ל/, '');
-    const monthNum = hebrewMonths[monthWord];
-    if (monthNum) {
-      let year = hebrewMonthPattern[3] ? (hebrewMonthPattern[3].length === 2 ? '20' + hebrewMonthPattern[3] : hebrewMonthPattern[3]) : String(refYear);
-      result.dueDate = year + '-' + monthNum + '-' + day;
-      result.description = result.description.replace(hebrewMonthPattern[0], ' ').trim();
+  // Hebrew ordinal/cardinal number words → digits
+  const hebrewNumbers = {
+    'ראשון': 1, 'הראשון': 1, 'אחד': 1, 'אחת': 1,
+    'שני': 2, 'השני': 2, 'שנייה': 2, 'שתיים': 2,
+    'שלישי': 3, 'השלישי': 3, 'שלוש': 3, 'שלושה': 3,
+    'רביעי': 4, 'הרביעי': 4, 'ארבע': 4, 'ארבעה': 4,
+    'חמישי': 5, 'החמישי': 5, 'חמש': 5, 'חמישה': 5,
+    'שישי': 6, 'השישי': 6, 'שש': 6, 'שישה': 6,
+    'שביעי': 7, 'השביעי': 7, 'שבע': 7, 'שבעה': 7,
+    'שמיני': 8, 'השמיני': 8, 'שמונה': 8,
+    'תשיעי': 9, 'התשיעי': 9, 'תשע': 9, 'תשעה': 9,
+    'עשירי': 10, 'העשירי': 10, 'עשר': 10, 'עשרה': 10,
+    'עשרים': 20, 'שלושים': 30,
+  };
+
+  // Helper: resolve a day token (digit or Hebrew word) to a number
+  function resolveDay(token) {
+    if (!token) return 0;
+    token = token.trim().replace(/^ה[\-]?/, '');
+    if (/^\d+$/.test(token)) return parseInt(token, 10);
+    if (hebrewNumbers[token]) return hebrewNumbers[token];
+    // Compound: "עשרים ושלוש" → look for base in the token
+    for (var key in hebrewNumbers) {
+      if (token.includes(key)) return hebrewNumbers[key];
+    }
+    return 0;
+  }
+
+  // Helper: resolve month from token (strip leading ל/ב and look up)
+  function resolveMonth(token) {
+    if (!token) return '';
+    token = token.trim().replace(/^[לב]/, '');
+    return hebrewMonths[token] || '';
+  }
+
+  // Pattern 1: "[עד/ב/ל] [ה]DAY [ל/ב]MONTH [YEAR]" — DAY can be digit or Hebrew word
+  // Examples: "עד ה-25 למרץ 2026", "הראשון ליולי 2026", "בתאריך 28 למרץ", "ה-3 לאפריל"
+  var dayWords = Object.keys(hebrewNumbers).join('|');
+  var monthWords = Object.keys(hebrewMonths).join('|');
+  var dateRegex = new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:ה[\\-\\s]?)?(\\d{1,2}|' + dayWords + ')\\s+(?:ל|ב|של\\s+)?(' + monthWords + ')(?:\\s+(\\d{2,4}))?', '');
+  var hebrewMonthMatch = text.match(dateRegex);
+  if (hebrewMonthMatch) {
+    var day = resolveDay(hebrewMonthMatch[1]);
+    var monthNum = hebrewMonths[hebrewMonthMatch[2]];
+    if (day > 0 && day <= 31 && monthNum) {
+      var year = hebrewMonthMatch[3] ? (hebrewMonthMatch[3].length === 2 ? '20' + hebrewMonthMatch[3] : hebrewMonthMatch[3]) : String(refYear);
+      result.dueDate = year + '-' + monthNum + '-' + String(day).padStart(2, '0');
+      result.description = result.description.replace(hebrewMonthMatch[0], ' ').trim();
     }
   }
 
-  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 or עד לתאריך 23 ל 12 (numeric month)
+  // Pattern 2: עד ה-23 ל-12 or עד ה 23 ל 12 (numeric day + numeric month)
   if (!result.dueDate) {
-    const dateMatch1 = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+    var dateMatch1 = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
     if (dateMatch1) {
-      const day = dateMatch1[1].padStart(2, '0');
-      const month = dateMatch1[2].padStart(2, '0');
-      let year = dateMatch1[3] ? (dateMatch1[3].length === 2 ? '20' + dateMatch1[3] : dateMatch1[3]) : String(refYear);
-      result.dueDate = year + '-' + month + '-' + day;
+      var d1 = dateMatch1[1].padStart(2, '0');
+      var m1 = dateMatch1[2].padStart(2, '0');
+      var y1 = dateMatch1[3] ? (dateMatch1[3].length === 2 ? '20' + dateMatch1[3] : dateMatch1[3]) : String(refYear);
+      result.dueDate = y1 + '-' + m1 + '-' + d1;
       result.description = result.description.replace(dateMatch1[0], '').trim();
     }
   }
 
-  // Pattern: עד DD/MM/YYYY or DD.MM.YYYY
+  // Pattern 3: עד DD/MM/YYYY or DD.MM.YYYY
   if (!result.dueDate) {
-    const dateMatch2 = text.match(/עד\s+(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?/);
+    var dateMatch2 = text.match(/(?:עד\s+)?(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?/);
     if (dateMatch2) {
-      const day = dateMatch2[1].padStart(2, '0');
-      const month = dateMatch2[2].padStart(2, '0');
-      let year = dateMatch2[3] ? (dateMatch2[3].length === 2 ? '20' + dateMatch2[3] : dateMatch2[3]) : String(refYear);
-      result.dueDate = year + '-' + month + '-' + day;
+      var d2 = dateMatch2[1].padStart(2, '0');
+      var m2 = dateMatch2[2].padStart(2, '0');
+      var y2 = dateMatch2[3] ? (dateMatch2[3].length === 2 ? '20' + dateMatch2[3] : dateMatch2[3]) : String(refYear);
+      result.dueDate = y2 + '-' + m2 + '-' + d2;
       result.description = result.description.replace(dateMatch2[0], '').trim();
     }
   }
 
-  // Pattern: "מחר", "עד מחר"
+  // Pattern 4: Hebrew day names — "יום ראשון", "יום שני", etc.
+  if (!result.dueDate) {
+    var dayNames = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5, 'שבת': 6 };
+    var dayNameMatch = text.match(/יום\s+(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)/);
+    if (dayNameMatch) {
+      var target = dayNames[dayNameMatch[1]];
+      var next = new Date(refDate);
+      var diff = (target - next.getDay() + 7) % 7;
+      if (diff === 0) diff = 7; // next week
+      next.setDate(next.getDate() + diff);
+      result.dueDate = next.toISOString().split('T')[0];
+    }
+  }
+
+  // Pattern 5: "מחר", "עד מחר"
   if (!result.dueDate && /מחר/.test(text)) {
-    const tomorrow = new Date(refDate);
+    var tomorrow = new Date(refDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     result.dueDate = tomorrow.toISOString().split('T')[0];
   }
 
-  // Pattern: "עד סוף השבוע"
+  // Pattern 6: "עד סוף השבוע"
   if (!result.dueDate && /סוף השבוע/.test(text)) {
-    const friday = new Date(refDate);
+    var friday = new Date(refDate);
     friday.setDate(friday.getDate() + (5 - friday.getDay() + 7) % 7);
     result.dueDate = friday.toISOString().split('T')[0];
   }
