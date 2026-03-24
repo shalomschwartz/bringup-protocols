@@ -7,7 +7,7 @@
 <style>
 @media print {
   .noprint { display: none !important; }
-  body { margin: 0; padding: 0; }
+  body { margin: 0; padding: 0; background: #fff; }
   .page { break-after: page; margin: 0; box-shadow: none; }
 }
 
@@ -15,10 +15,11 @@
 
 body {
   font-family: Arial, 'Segoe UI', sans-serif;
-  background: #888;
+  background: #666;
   direction: rtl;
 }
 
+/* ── Toolbar ── */
 .toolbar {
   position: fixed;
   top: 0;
@@ -33,13 +34,7 @@ body {
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
-.toolbar-title {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 500;
-}
-
+.toolbar-title { flex: 1; font-size: 15px; font-weight: 500; }
 .toolbar button {
   background: rgba(255,255,255,0.2);
   color: #fff;
@@ -50,11 +45,9 @@ body {
   font-size: 13px;
   font-family: inherit;
 }
+.toolbar button:hover { background: rgba(255,255,255,0.35); }
 
-.toolbar button:hover {
-  background: rgba(255,255,255,0.35);
-}
-
+/* ── Pages container ── */
 .pages {
   padding-top: 60px;
   display: flex;
@@ -64,114 +57,84 @@ body {
   padding-bottom: 40px;
 }
 
+/* ── Each page: exact A4 at 96dpi = 794 x 1123 ── */
 .page {
   width: 794px;
-  min-height: 1123px;
+  height: 1123px;
   background: #fff;
   position: relative;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
-
 .page-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  top: 0; left: 0;
+  width: 794px;
+  height: 1123px;
   z-index: 0;
 }
-
 .page-content {
-  position: relative;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   z-index: 1;
-  padding: 0;
 }
 
-/* ── Page 1 layout matching the original template ── */
+/* ══════════════════════════════════════════════
+   Page 1 — positions matched to the original
+   bg00001.jpg letterhead
+   ══════════════════════════════════════════════ */
+
 .p1-date {
   position: absolute;
-  top: 133px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
+  top: 133px; left: 66px;
+  font-size: 14px; color: #000;
+  font-family: Arial, sans-serif;
 }
-
 .p1-to {
   position: absolute;
-  top: 166px;
-  right: 66px;
-  font-size: 14px;
-  color: #000;
+  top: 166px; right: 66px;
+  font-size: 14px; color: #000;
+  font-family: Arial, sans-serif;
 }
-
 .p1-subject {
   position: absolute;
-  top: 200px;
-  right: 66px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
+  top: 200px; right: 66px; left: 66px;
+  font-size: 14px; color: #000;
   text-align: right;
+  font-family: Arial, sans-serif;
 }
-
-.p1-subject u {
-  font-weight: bold;
-}
+.p1-subject u { font-weight: bold; }
 
 .p1-participants {
   position: absolute;
-  top: 235px;
-  right: 66px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
+  top: 235px; right: 66px; left: 66px;
+  font-size: 14px; color: #000;
   text-align: right;
+  font-family: Arial, sans-serif;
 }
-
-.p1-location {
-  position: absolute;
-  top: 269px;
-  right: 66px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
-  text-align: right;
-}
-
 .p1-phase {
   position: absolute;
-  top: 269px;
-  right: 66px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
+  right: 66px; left: 66px;
+  font-size: 14px; color: #000;
   text-align: right;
+  font-family: Arial, sans-serif;
 }
-
 .p1-intro {
   position: absolute;
-  top: 305px;
-  right: 66px;
-  left: 66px;
-  font-size: 14px;
-  color: #000;
+  right: 66px; left: 66px;
+  font-size: 14px; color: #000;
   text-align: right;
+  font-family: Arial, sans-serif;
 }
 
-/* Task table */
+/* ── Task table (shared across pages) ── */
 .task-table {
-  position: absolute;
-  top: 340px;
-  right: 50px;
-  left: 50px;
-  font-size: 12px;
   border-collapse: collapse;
   direction: rtl;
-  width: calc(100% - 100px);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  width: 100%;
 }
-
 .task-table th {
   background: #e8e8e8;
   border: 1px solid #999;
@@ -181,7 +144,6 @@ body {
   font-size: 12px;
   color: #000;
 }
-
 .task-table td {
   border: 1px solid #999;
   padding: 5px 8px;
@@ -190,47 +152,37 @@ body {
   color: #000;
   line-height: 1.5;
 }
-
 .task-table .col-num { width: 35px; text-align: center; }
-.task-table .col-summary { }
 .task-table .col-owner { width: 100px; text-align: center; }
 .task-table .col-date { width: 80px; text-align: center; }
 
-/* Footer section */
-.p-footer {
+/* Table wrapper — absolute on page 1, static on page 2+ */
+.p1-table-wrap {
   position: absolute;
-  bottom: 80px;
-  right: 66px;
-  left: 66px;
-  font-size: 13px;
-  color: #000;
-  line-height: 1.8;
+  right: 50px; left: 50px;
 }
-
-/* ── Page 2+ (continuation) ── */
-.p2-tasks {
+.p2-table-wrap {
   position: absolute;
   top: 130px;
-  right: 50px;
-  left: 50px;
-  font-size: 12px;
+  right: 50px; left: 50px;
 }
 
-.p2-footer {
+/* ── Footer — always at bottom of the LAST page ── */
+.page-footer {
   position: absolute;
-  bottom: 80px;
-  right: 66px;
-  left: 66px;
+  bottom: 75px;
+  right: 66px; left: 66px;
   font-size: 13px;
   color: #000;
   line-height: 1.8;
+  font-family: Arial, sans-serif;
 }
 
-/* Error state */
+/* ── Error state ── */
 .error-state {
   text-align: center;
   padding: 100px 20px;
-  color: #666;
+  color: #ccc;
   font-size: 16px;
 }
 </style>
@@ -242,221 +194,167 @@ body {
 <div class="toolbar noprint">
   <div class="toolbar-title" id="toolbar-title">פרוטוקול פגישה — BringUp</div>
   <button onclick="downloadPDF()">📥 הורד PDF</button>
-  <button onclick="window.print()">🖨️ הדפס</button>
   <button onclick="window.close()">✕ סגור</button>
 </div>
 
 <div class="pages" id="pages">
   <div class="error-state" id="error-state" style="display:none;">
-    <p>❌ לא נמצאו נתוני פרוטוקול</p>
+    <p>לא נמצאו נתוני פרוטוקול</p>
     <p style="font-size:13px;margin-top:8px;">חזור לאפליקציה ולחץ "צפה במסמך"</p>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Read protocol data from localStorage
   const raw = localStorage.getItem('bringup_protocol');
-  if (!raw) {
-    document.getElementById('error-state').style.display = 'block';
-    return;
-  }
+  if (!raw) { document.getElementById('error-state').style.display = 'block'; return; }
 
   let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (e) {
-    document.getElementById('error-state').style.display = 'block';
-    return;
-  }
+  try { data = JSON.parse(raw); }
+  catch (e) { document.getElementById('error-state').style.display = 'block'; return; }
 
   const { projectName, date, location, participants, tasks, phase, recorder } = data;
 
-  document.getElementById('toolbar-title').textContent =
-    'פרוטוקול פגישה — ' + (projectName || 'BringUp');
+  document.getElementById('toolbar-title').textContent = 'פרוטוקול פגישה — ' + (projectName || 'BringUp');
+  document.title = (projectName || '') + ' — סיכום פגישה שבועית מתאריך ' + formatDate(date);
 
-  document.title = (projectName || '') + ' — פרוטוקול פגישה ' + formatDate(date);
+  // ── Pagination constants ──
+  // Page 1 header takes ~370px, footer ~75px, each task row ~32px
+  const TASKS_PER_PAGE1 = 15;
+  const TASKS_PER_PAGE2 = 25;
 
-  // Calculate how many tasks fit per page
-  const TASKS_PER_PAGE1 = 12; // Page 1 has header info, less room
-  const TASKS_PER_PAGE2 = 22; // Continuation pages have more room
-
-  const pages = [];
-
-  // ── Page 1 ──
-  const page1Tasks = tasks.slice(0, TASKS_PER_PAGE1);
-  const page1 = buildPage1({
-    projectName,
-    date,
-    location,
-    participants,
-    tasks: page1Tasks,
-    phase,
-    totalTasks: tasks.length,
-    isLastPage: tasks.length <= TASKS_PER_PAGE1,
-    recorder,
-  });
-  pages.push(page1);
-
-  // ── Additional pages if needed ──
-  let remaining = tasks.slice(TASKS_PER_PAGE1);
-  let pageNum = 2;
-  while (remaining.length > 0) {
-    const pageTasks = remaining.slice(0, TASKS_PER_PAGE2);
-    remaining = remaining.slice(TASKS_PER_PAGE2);
-    const isLast = remaining.length === 0;
-
-    const page = buildContinuationPage({
-      tasks: pageTasks,
-      startNum: TASKS_PER_PAGE1 + (pageNum - 2) * TASKS_PER_PAGE2 + 1,
-      pageNum,
-      isLastPage: isLast,
-      projectName,
-      recorder,
-      participants,
-    });
-    pages.push(page);
-    pageNum++;
-  }
-
-  // Render pages
-  const container = document.getElementById('pages');
-  pages.forEach(p => container.appendChild(p));
-});
-
-function buildPage1({ projectName, date, location, participants, tasks, phase, totalTasks, isLastPage, recorder }) {
-  const page = document.createElement('div');
-  page.className = 'page';
-
+  const allPages = [];
   const formattedDate = formatDate(date);
   const participantNames = (participants || []).join(', ');
 
-  page.innerHTML = `
+  // ── Compute dynamic Y offsets for page 1 ──
+  let nextY = 235; // after participants line
+
+  const hasPhase = phase && phase.length > 0;
+  const hasLocation = location && location.length > 0;
+
+  if (hasPhase) nextY += 34;
+  if (hasLocation) nextY += 34;
+
+  // "להלן הסיכומים" line
+  const introY = nextY;
+  nextY += 32;
+  const tableY = nextY;
+
+  // ── PAGE 1 ──
+  const p1Tasks = tasks.slice(0, TASKS_PER_PAGE1);
+  const isOnlyPage = tasks.length <= TASKS_PER_PAGE1;
+
+  const page1 = document.createElement('div');
+  page1.className = 'page';
+  page1.innerHTML = `
     <img class="page-bg" src="bgimg/bg00001.jpg" alt="" />
     <div class="page-content">
       <div class="p1-date">${formattedDate}</div>
       <div class="p1-to">לכבוד רשימת התפוצה</div>
-      <div class="p1-subject">
-        הנדון – <u>${escapeHtml(projectName || '')} – סיכום פגישה שבועית מתאריך ${formattedDate}</u>
+      <div class="p1-subject">הנדון – <u>${esc(projectName || '')} – סיכום פגישה שבועית מתאריך ${formattedDate}</u></div>
+      <div class="p1-participants">משתתפים : ${esc(participantNames)}</div>
+      ${hasPhase ? '<div class="p1-phase" style="top:' + (235 + (hasLocation ? 34 : 0)) + 'px;">בשלב ביצוע הפגישה : ' + esc(phase) + '</div>' : ''}
+      ${hasLocation ? '<div class="p1-phase" style="top:269px;">מיקום : ' + esc(location) + '</div>' : ''}
+      <div class="p1-intro" style="top:${introY}px;">להלן הסיכומים:-</div>
+      <div class="p1-table-wrap" style="top:${tableY}px;">
+        ${taskTableHTML(p1Tasks, 1)}
       </div>
-      <div class="p1-participants">משתתפים : ${escapeHtml(participantNames)}</div>
-      ${location ? '<div class="p1-location">מיקום הפגישה : ' + escapeHtml(location) + '</div>' : ''}
-      ${phase ? '<div class="p1-phase" style="top:' + (location ? '303' : '269') + 'px;">בשלב ביצוע הפגישה : ' + escapeHtml(phase) + '</div>' : ''}
-      <div class="p1-intro" style="top:${location && phase ? '337' : location || phase ? '303' : '269'}px;">להלן הסיכומים:-</div>
-      ${buildTaskTable(tasks, 1, (location && phase ? 370 : location || phase ? 340 : 305))}
-      ${isLastPage ? buildFooter(recorder, participants) : ''}
+      ${isOnlyPage ? footerHTML(recorder, participants) : ''}
     </div>
   `;
-  return page;
-}
+  allPages.push(page1);
 
-function buildContinuationPage({ tasks, startNum, pageNum, isLastPage, projectName, recorder, participants }) {
-  const page = document.createElement('div');
-  page.className = 'page';
+  // ── CONTINUATION PAGES ──
+  let remaining = tasks.slice(TASKS_PER_PAGE1);
+  let startNum = TASKS_PER_PAGE1 + 1;
 
-  page.innerHTML = `
-    <img class="page-bg" src="bgimg/bg00002.jpg" alt="" />
-    <div class="page-content">
-      <div class="p2-tasks">
-        ${buildTaskTableHTML(tasks, startNum)}
+  while (remaining.length > 0) {
+    const chunk = remaining.slice(0, TASKS_PER_PAGE2);
+    remaining = remaining.slice(TASKS_PER_PAGE2);
+    const isLast = remaining.length === 0;
+
+    const pg = document.createElement('div');
+    pg.className = 'page';
+    pg.innerHTML = `
+      <img class="page-bg" src="bgimg/bg00002.jpg" alt="" />
+      <div class="page-content">
+        <div class="p2-table-wrap">
+          ${taskTableHTML(chunk, startNum)}
+        </div>
+        ${isLast ? footerHTML(recorder, participants) : ''}
       </div>
-      ${isLastPage ? buildFooter(recorder, participants, true) : ''}
-    </div>
-  `;
-  return page;
-}
+    `;
+    allPages.push(pg);
+    startNum += chunk.length;
+  }
 
-function buildTaskTable(tasks, startNum, topPos) {
+  // Render
+  const container = document.getElementById('pages');
+  allPages.forEach(p => container.appendChild(p));
+});
+
+// ── Helpers ──
+
+function taskTableHTML(tasks, startNum) {
   if (!tasks || tasks.length === 0) return '';
   return `
-    <table class="task-table" style="top:${topPos}px;">
+    <table class="task-table">
       <thead>
         <tr>
           <th class="col-num">ספ'</th>
-          <th class="col-summary">הסיכום</th>
+          <th>הסיכום</th>
           <th class="col-owner">אחריות</th>
-          <th class="col-date">לביצוע עד</th>
+          <th class="col-date">לביצוע עד.</th>
         </tr>
       </thead>
       <tbody>
-        ${tasks.map((t, i) => `
-          <tr>
-            <td class="col-num">.${startNum + i}</td>
-            <td class="col-summary">${escapeHtml(t.desc || t.name || '')}</td>
-            <td class="col-owner">${escapeHtml(t.owner || '')}</td>
-            <td class="col-date">${t.date ? formatDate(t.date) : ''}</td>
-          </tr>
-        `).join('')}
+        ${tasks.map((t, i) => `<tr>
+          <td class="col-num">.${startNum + i}</td>
+          <td>${esc(t.desc || t.name || '')}</td>
+          <td class="col-owner">${esc(t.owner || '')}</td>
+          <td class="col-date">${t.date ? formatDate(t.date) : ''}</td>
+        </tr>`).join('')}
       </tbody>
     </table>
   `;
 }
 
-function buildTaskTableHTML(tasks, startNum) {
-  return `
-    <table class="task-table" style="position:static;width:100%;">
-      <thead>
-        <tr>
-          <th class="col-num">ספ'</th>
-          <th class="col-summary">הסיכום</th>
-          <th class="col-owner">אחריות</th>
-          <th class="col-date">לביצוע עד</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tasks.map((t, i) => `
-          <tr>
-            <td class="col-num">.${startNum + i}</td>
-            <td class="col-summary">${escapeHtml(t.desc || t.name || '')}</td>
-            <td class="col-owner">${escapeHtml(t.owner || '')}</td>
-            <td class="col-date">${t.date ? formatDate(t.date) : ''}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-function buildFooter(recorder, participants, isPage2) {
-  const cls = isPage2 ? 'p2-footer' : 'p-footer';
+function footerHTML(recorder, participants) {
   const names = (participants || []).join(', ');
   return `
-    <div class="${cls}">
-      <div>רשם: ${escapeHtml(recorder || '')}</div>
-      <div>תפוצה : משתתפי הפגישה${names ? ', ' + escapeHtml(names) : ''}</div>
+    <div class="page-footer">
+      <div>רשם: ${esc(recorder || '')}</div>
+      <div>תפוצה : משתתפי הפגישה${names ? ', ' + esc(names) : ''}</div>
     </div>
   `;
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    return parts[2] + '.' + parts[1] + '.' + parts[0];
-  }
-  return dateStr;
+  const p = dateStr.split('-');
+  return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : dateStr;
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str || '';
-  return div.innerHTML;
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
 }
 
 function downloadPDF() {
   const pages = document.getElementById('pages');
-  const filename = document.title.replace(/[^\u0590-\u05FFa-zA-Z0-9 _-]/g, '').trim() || 'protocol';
+  const filename = document.title.replace(/[^\u0590-\u05FFa-zA-Z0-9 _\-]/g, '').trim() || 'protocol';
 
   const opt = {
     margin: 0,
     filename: filename + '.pdf',
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-    jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'], before: '.page' },
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0, width: 794, height: 1123 },
+    jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] },
+    pagebreak: { mode: ['css'], before: '.page' },
   };
 
-  // Show generating indicator
   const btn = event.target;
   const origText = btn.textContent;
   btn.textContent = '⏳ מייצר PDF...';
@@ -468,8 +366,7 @@ function downloadPDF() {
   }).catch(() => {
     btn.textContent = origText;
     btn.disabled = false;
-    // Fallback to print dialog
-    window.print();
+    alert('שגיאה בייצור PDF. נסה שוב.');
   });
 }
 </script>
