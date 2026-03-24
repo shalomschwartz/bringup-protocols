@@ -805,8 +805,8 @@ function localParseTask(text, participantNames, meetingDate) {
     'ספטמבר': '09', 'אוקטובר': '10', 'נובמבר': '11', 'דצמבר': '12',
   };
 
-  // Pattern: עד ה-25 למרץ 2026 or עד 25 למרס
-  const hebrewMonthPattern = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל|של\s+)?(\S+?)(?:\s+(\d{2,4}))?(?:\s|$|,|\.)/);
+  // Pattern: עד ה-25 למרץ 2026 / עד לתאריך 28 למרץ / עד תאריך 25 למרס / בתאריך 25 למרץ
+  const hebrewMonthPattern = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל|של\s+)?(\S+?)(?:\s+(\d{2,4}))?(?:\s|$|,|\.)/);
   if (hebrewMonthPattern) {
     const day = hebrewMonthPattern[1].padStart(2, '0');
     const monthWord = hebrewMonthPattern[2].replace(/^ל/, '');
@@ -818,9 +818,9 @@ function localParseTask(text, participantNames, meetingDate) {
     }
   }
 
-  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 (numeric month)
+  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 or עד לתאריך 23 ל 12 (numeric month)
   if (!result.dueDate) {
-    const dateMatch1 = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+    const dateMatch1 = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
     if (dateMatch1) {
       const day = dateMatch1[1].padStart(2, '0');
       const month = dateMatch1[2].padStart(2, '0');
