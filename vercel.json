@@ -5,6 +5,12 @@
     { "source": "/api/users", "destination": "/api/users" },
     { "source": "/api/protocol", "destination": "/api/protocol" },
     { "source": "/api/tasks", "destination": "/api/tasks" },
-    { "source": "/api/parse-task", "destination": "/api/parse-task" }
-  ]
+    { "source": "/api/parse-task", "destination": "/api/parse-task" },
+    { "source": "/api/upload-pdf", "destination": "/api/upload-pdf" }
+  ],
+  "functions": {
+    "api/upload-pdf.js": {
+      "maxDuration": 30
+    }
+  }
 }

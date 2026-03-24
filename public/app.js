@@ -759,6 +759,47 @@ async function downloadDocumentPDF() {
   }
 }
 
+async function generatePdfBlob() {
+  storeProtocolData();
+  var data = JSON.parse(localStorage.getItem('bringup_protocol'));
+
+  await Promise.all([
+    loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas'),
+    loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js', 'jspdf'),
+  ]);
+  var jsPDF = window.jspdf.jsPDF;
+
+  var bgArr = await Promise.all([toBase64('bgimg/bg00001.jpg'), toBase64('bgimg/bg00002.jpg')]);
+  var docHTML = buildPdfHtml(data, bgArr[0], bgArr[1]);
+  var parser = new DOMParser();
+  var parsed = parser.parseFromString(docHTML, 'text/html');
+
+  var container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;width:794px;z-index:-1;pointer-events:none;';
+  document.body.appendChild(container);
+
+  parsed.querySelectorAll('body > div').forEach(function(page) {
+    container.appendChild(document.adoptNode(page));
+  });
+
+  var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123] });
+  var pages = Array.from(container.children);
+
+  for (var i = 0; i < pages.length; i++) {
+    var canvas = await window.html2canvas(pages[i], {
+      scale: 2, useCORS: false,
+      width: 794, height: 1123,
+      windowWidth: 794, windowHeight: 1123,
+      scrollX: 0, scrollY: 0,
+    });
+    if (i > 0) pdf.addPage();
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 794, 1123);
+  }
+
+  document.body.removeChild(container);
+  return pdf.output('blob');
+}
+
 function loadScript(src, globalName) {
   return new Promise((resolve, reject) => {
     if (window[globalName]) { resolve(window[globalName]); return; }
@@ -971,6 +1012,33 @@ async function sendToMonday() {
     const protocol = await protocolRes.json();
 
     if (protocol.error) throw new Error(JSON.stringify(protocol.error));
+
+    const protocolItemId = protocol.id || (protocol.data && protocol.data.create_item && protocol.data.create_item.id);
+
+    // 3. Generate PDF and upload to protocol item
+    if (protocolItemId) {
+      textEl.textContent = 'מעלה PDF...';
+      try {
+        var pdfBlob = await generatePdfBlob();
+        if (pdfBlob) {
+          // Convert blob to base64
+          var reader = new FileReader();
+          var pdfBase64 = await new Promise(function(resolve) {
+            reader.onload = function() { resolve(reader.result.split(',')[1]); };
+            reader.readAsDataURL(pdfBlob);
+          });
+          var pdfFilename = (proj ? proj.name : 'פרוטוקול') + '_' + formatDateHe(date).replace(/\./g, '-') + '.pdf';
+
+          await fetch('/api/upload-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId: protocolItemId, filename: pdfFilename, pdfBase64: pdfBase64 }),
+          });
+        }
+      } catch (pdfErr) {
+        console.error('PDF upload failed (non-critical):', pdfErr);
+      }
+    }
 
     statusEl.className = 'success-msg';
     statusEl.textContent = '✅ הפרוטוקול נוצר בהצלחה ב-Monday.com!';
