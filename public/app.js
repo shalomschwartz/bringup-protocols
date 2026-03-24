@@ -1,7 +1,6 @@
 // ── State ──
 const state = {
   projects: [],
-  contacts: [],
   users: [],
   selectedProject: null,
   participants: [],   // { id, name, role, selected, color }
@@ -29,14 +28,12 @@ async function loadData() {
   document.getElementById('screen1').classList.remove('active');
 
   try {
-    const [projects, contacts, users] = await Promise.all([
+    const [projects, users] = await Promise.all([
       fetch('/api/projects').then(r => r.json()),
-      fetch('/api/contacts').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
     ]);
 
     state.projects = projects;
-    state.contacts = contacts;
     state.users = users;
 
     populateProjectDropdown();
@@ -175,31 +172,15 @@ async function createNewProject() {
 function buildParticipantsList() {
   state.participants = [];
 
-  // Add contacts
-  state.contacts.forEach((c, i) => {
-    const title = c.columns.title5?.text || '';
-    const email = c.columns.contact_email?.text || '';
-    state.participants.push({
-      id: 'contact-' + c.id,
-      name: c.name,
-      role: title || '',
-      email: email,
-      selected: true,
-      color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-    });
-  });
-
-  // Add users
+  // Add workspace users from Monday.com directory
   state.users.forEach((u, i) => {
-    // Skip if already in contacts by name
-    if (state.participants.some(p => p.name === u.name)) return;
     state.participants.push({
       id: 'user-' + u.id,
       name: u.name,
       role: '',
       email: u.email,
       selected: false,
-      color: AVATAR_COLORS[(i + state.contacts.length) % AVATAR_COLORS.length],
+      color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     });
   });
 
