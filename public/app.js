@@ -936,14 +936,12 @@ function buildPdfHtml(data, bg1, bg2) {
       + '</div>';
   }
 
-  // Footer positioned right below the last task row
+  // Footer positioned right below the full table (including empty rows)
   var footerTop;
   if (needsP2) {
-    var p2ActualRows = Math.max(p2Tasks.length, 1);
-    footerTop = P2_TABLE_TOP + HEADER_ROW_H + (p2ActualRows * p2RowH) + 20;
+    footerTop = P2_TABLE_TOP + HEADER_ROW_H + (P2_MAX * p2RowH) + 10;
   } else {
-    var p1ActualRows = Math.max(p1Tasks.length, 1);
-    footerTop = tableTop + HEADER_ROW_H + (p1ActualRows * p1RowH) + 20;
+    footerTop = tableTop + HEADER_ROW_H + (P1_MAX * p1RowH) + 10;
   }
   // Don't go below the letterhead contact info area
   footerTop = Math.min(footerTop, PAGE_H - 85);
