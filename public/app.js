@@ -238,11 +238,20 @@ function addParticipant() {
 
 // ── Screen 3: Tasks ──
 let recOn = false;
+let manualOn = false;
 
 function toggleRec() {
   recOn = !recOn;
-  document.getElementById('rectxt').textContent = recOn ? '\u05e2\u05e6\u05d5\u05e8 \u05d4\u05e7\u05dc\u05d8\u05d4' : '\u05d4\u05e7\u05dc\u05d8 \u05de\u05e9\u05d9\u05de\u05d4 \u05d7\u05d3\u05e9\u05d4';
+  manualOn = false;
+  document.getElementById('rectxt').textContent = recOn ? 'עצור הקלטה' : 'הקלט משימה';
   document.getElementById('rec-form').style.display = recOn ? 'block' : 'none';
+}
+
+function toggleManualTask() {
+  manualOn = !manualOn;
+  recOn = false;
+  document.getElementById('rectxt').textContent = 'הקלט משימה';
+  document.getElementById('rec-form').style.display = manualOn ? 'block' : 'none';
 }
 
 function buildTaskOwnerDropdown() {
@@ -270,7 +279,8 @@ function addTask() {
   document.getElementById('task-date').value = '';
 
   recOn = false;
-  document.getElementById('rectxt').textContent = '\u05d4\u05e7\u05dc\u05d8 \u05de\u05e9\u05d9\u05de\u05d4 \u05d7\u05d3\u05e9\u05d4';
+  manualOn = false;
+  document.getElementById('rectxt').textContent = 'הקלט משימה';
   document.getElementById('rec-form').style.display = 'none';
 
   renderTasks();
@@ -357,10 +367,10 @@ async function sendToMonday() {
 
     if (protocol.error) throw new Error(JSON.stringify(protocol.error));
 
-    // 2. Create subitems (tasks)
+    // 2. Create tasks on task board linked to the project
     if (state.tasks.length > 0) {
       const tasksPayload = state.tasks.map(t => ({
-        name: t.desc + (t.owner ? ' [\u05d0\u05d7\u05e8\u05d9\u05d5\u05ea: ' + t.owner + ']' : ''),
+        name: t.desc + (t.owner ? ' [אחריות: ' + t.owner + ']' : ''),
         owner: t.owner,
         date: t.date,
       }));
@@ -368,7 +378,7 @@ async function sendToMonday() {
       await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentId: protocol.id, tasks: tasksPayload }),
+        body: JSON.stringify({ projectId: proj?.id, tasks: tasksPayload }),
       });
     }
 
