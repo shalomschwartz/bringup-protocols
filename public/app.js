@@ -76,17 +76,33 @@ function goStep(n) {
 // ── Screen 1: Projects ──
 function populateProjectDropdown() {
   const sel = document.getElementById('project-select');
-  sel.innerHTML = '<option value="">— \u05d1\u05d7\u05e8 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8 —</option>';
+  sel.innerHTML = '<option value="">— בחר פרויקט —</option>';
   state.projects.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
     opt.textContent = p.name;
     sel.appendChild(opt);
   });
+  // Add "create new" option
+  const newOpt = document.createElement('option');
+  newOpt.value = '__new__';
+  newOpt.textContent = '+ צור פרויקט חדש';
+  sel.appendChild(newOpt);
 }
 
 function handleProjectSelect(id) {
   const card = document.getElementById('proj-card');
+  const newForm = document.getElementById('new-project-form');
+
+  if (id === '__new__') {
+    card.style.display = 'none';
+    newForm.style.display = 'block';
+    state.selectedProject = null;
+    return;
+  }
+
+  newForm.style.display = 'none';
+
   if (!id) {
     card.style.display = 'none';
     state.selectedProject = null;
@@ -101,14 +117,58 @@ function handleProjectSelect(id) {
 
   document.getElementById('proj-name').textContent = proj.name;
 
-  const status = proj.columns.project_status?.text || '';
-  document.getElementById('proj-status').textContent = '\u05e1\u05d8\u05d8\u05d5\u05e1: ' + (status || '\u05dc\u05d0 \u05d4\u05d5\u05d2\u05d3\u05e8');
+  const step = proj.columns.portfolio_project_step?.text || '';
+  document.getElementById('proj-step').textContent = 'שלב: ' + (step || 'לא הוגדר');
 
-  const timeline = proj.columns.project_timeline?.text || '';
-  document.getElementById('proj-timeline').textContent = timeline ? '\u05e6\u05d9\u05e8 \u05d6\u05de\u05df: ' + timeline : '';
+  const health = proj.columns.portfolio_project_rag?.text || '';
+  document.getElementById('proj-health').textContent = health ? 'בריאות: ' + health : '';
+
+  const timeline = proj.columns.portfolio_project_planned_timeline?.text || '';
+  document.getElementById('proj-timeline').textContent = timeline ? 'ציר זמן: ' + timeline : '';
 
   const badge = document.getElementById('proj-badge');
-  badge.textContent = status || '\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8';
+  badge.textContent = step || 'פרויקט';
+}
+
+async function createNewProject() {
+  const nameInput = document.getElementById('new-project-name');
+  const name = nameInput.value.trim();
+  if (!name) return;
+
+  const newForm = document.getElementById('new-project-form');
+  const btn = newForm.querySelector('.btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'יוצר...';
+
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const created = await res.json();
+
+    if (created.error) throw new Error(JSON.stringify(created.error));
+
+    // Add to state and select it
+    const newProj = { id: created.id, name: created.name, columns: {} };
+    state.projects.push(newProj);
+    populateProjectDropdown();
+
+    // Select the new project in dropdown
+    const sel = document.getElementById('project-select');
+    sel.value = created.id;
+    handleProjectSelect(created.id);
+
+    nameInput.value = '';
+    newForm.style.display = 'none';
+  } catch (err) {
+    console.error('Error creating project:', err);
+    alert('שגיאה ביצירת הפרויקט. נסה שוב.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '+ צור פרויקט ב-Monday';
+  }
 }
 
 // ── Screen 2: Participants ──

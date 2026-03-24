@@ -15,7 +15,7 @@ async function mondayQuery(query, variables) {
 
 const BOARDS = {
   protocol: 5093376402,
-  projects: 1877350176,
+  projects: 1718594394,
   contacts: 1877350141,
 };
 

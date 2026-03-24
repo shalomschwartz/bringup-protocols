@@ -11,7 +11,7 @@ const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ0MDg4NTQyOCwiYWFpIjoxMSwidWlkIj
 
 const BOARDS = {
   protocol: 5093376402,
-  projects: 1877350176,
+  projects: 1718594394,
   contacts: 1877350141,
 };
 
@@ -27,7 +27,7 @@ async function mondayQuery(query, variables) {
   return res.json();
 }
 
-// GET /api/projects — fetch Client Projects board items
+// GET /api/projects — fetch projects from תיקי פרויקטים board
 app.get('/api/projects', async (req, res) => {
   try {
     const data = await mondayQuery(`{
@@ -36,7 +36,7 @@ app.get('/api/projects', async (req, res) => {
           items {
             id
             name
-            column_values {
+            column_values(ids: ["portfolio_project_step", "portfolio_project_rag", "portfolio_project_planned_timeline", "portfolio_project_scope", "location__1"]) {
               id
               type
               text
@@ -57,6 +57,37 @@ app.get('/api/projects', async (req, res) => {
   } catch (err) {
     console.error('Error fetching projects:', err);
     res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+// POST /api/projects — create a new project on the projects board
+app.post('/api/projects', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Project name is required' });
+
+    const data = await mondayQuery(
+      `mutation ($boardId: ID!, $itemName: String!) {
+        create_item(board_id: $boardId, item_name: $itemName) {
+          id
+          name
+        }
+      }`,
+      {
+        boardId: String(BOARDS.projects),
+        itemName: name,
+      }
+    );
+
+    if (data.errors) {
+      console.error('Monday mutation errors:', data.errors);
+      return res.status(400).json({ error: data.errors });
+    }
+
+    res.json(data.data.create_item);
+  } catch (err) {
+    console.error('Error creating project:', err);
+    res.status(500).json({ error: 'Failed to create project' });
   }
 });
 
