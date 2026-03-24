@@ -362,57 +362,60 @@ async function stopRecording() {
   recStatus.textContent = '⏳ מנתח משימה...';
   recStatus.style.display = 'block';
 
-  try {
-    const selectedParticipants = state.participants.filter(p => p.selected);
-    const participantNames = selectedParticipants.map(p => p.name);
-    const meetingDate = document.getElementById('meeting-date').value;
+  const selectedParticipants = state.participants.filter(p => p.selected);
+  const participantNames = selectedParticipants.map(p => p.name);
+  const meetingDate = document.getElementById('meeting-date').value;
 
+  let parsed = null;
+
+  // Try AI parsing first
+  try {
     const res = await fetch('/api/parse-task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: spokenText, participants: participantNames, meetingDate }),
     });
-    const parsed = await res.json();
-
-    if (parsed.error) throw new Error(parsed.error);
-
-    // Find the matching participant to get their Monday user ID
-    const ownerName = parsed.owner || '';
-    let ownerId = '';
-    if (ownerName) {
-      const matchedParticipant = selectedParticipants.find(p =>
-        p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
-      );
-      if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
-        ownerId = matchedParticipant.id.replace('user-', '');
-      }
+    const data = await res.json();
+    if (!data.error && data.description) {
+      parsed = data;
     }
-
-    // Auto-add the task directly — zero keyboard interaction
-    state.tasks.push({
-      desc: parsed.description || spokenText,
-      owner: ownerName,
-      ownerId: ownerId,
-      date: parsed.dueDate || '',
-    });
-
-    renderTasks();
-
-    const summary = [];
-    if (ownerName) summary.push('אחריות: ' + ownerName);
-    if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
-    recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
-    recStatus.style.display = 'block';
-    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
   } catch (err) {
-    console.error('Parse error:', err);
-    // Fallback: put text in form for manual editing
-    recStatus.textContent = '⚠️ לא הצלחנו לנתח — ערוך ידנית';
-    document.getElementById('rec-form').style.display = 'block';
-    document.getElementById('task-desc').value = spokenText;
-    manualOn = true;
-    setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
+    console.error('AI parse failed, using local fallback:', err);
   }
+
+  // Fallback: local text parsing if AI failed
+  if (!parsed) {
+    parsed = localParseTask(spokenText, participantNames, meetingDate);
+  }
+
+  // Find the matching participant to get their Monday user ID
+  const ownerName = parsed.owner || '';
+  let ownerId = '';
+  if (ownerName) {
+    const matchedParticipant = selectedParticipants.find(p =>
+      p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
+    );
+    if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
+      ownerId = matchedParticipant.id.replace('user-', '');
+    }
+  }
+
+  // Auto-add the task directly — zero keyboard interaction
+  state.tasks.push({
+    desc: parsed.description || spokenText,
+    owner: ownerName,
+    ownerId: ownerId,
+    date: parsed.dueDate || '',
+  });
+
+  renderTasks();
+
+  const summary = [];
+  if (ownerName) summary.push('אחריות: ' + ownerName);
+  if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
+  recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
+  recStatus.style.display = 'block';
+  setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
 }
 
 function resetRecordingUI() {
@@ -735,6 +738,82 @@ async function sendToMonday() {
     btn.disabled = false;
     textEl.textContent = 'שלח ל Monday ↑';
   }
+}
+
+// ── Local task parser (fallback when AI is unavailable) ──
+function localParseTask(text, participantNames, meetingDate) {
+  const result = { description: text, owner: '', dueDate: '' };
+
+  // Extract owner: look for "באחריות X", "אחריות X", or match participant first name
+  const ownerMatch = text.match(/(?:באחריות|אחריות)\s+([^\s,\.]+(?:\s+[^\s,\.]+)?)/);
+  if (ownerMatch) {
+    const spoken = ownerMatch[1].trim();
+    const matched = participantNames.find(p =>
+      p === spoken || p.includes(spoken) || spoken.includes(p.split(' ')[0])
+    );
+    if (matched) {
+      result.owner = matched;
+      // Clean owner mention from description
+      result.description = text.replace(/(?:באחריות|אחריות)\s+[^\s,\.]+(?:\s+[^\s,\.]+)?/, '').trim();
+    }
+  }
+
+  // If no explicit owner pattern, check if any participant name appears in the text
+  if (!result.owner) {
+    for (const name of participantNames) {
+      const firstName = name.split(' ')[0];
+      if (text.includes(firstName) && firstName.length > 1) {
+        result.owner = name;
+        break;
+      }
+    }
+  }
+
+  // Extract date: "עד ה-DD ל-MM" or "עד DD/MM" or "עד DD.MM"
+  const refDate = meetingDate ? new Date(meetingDate) : new Date();
+  const refYear = refDate.getFullYear();
+
+  // Pattern: עד ה-23 ל-12 or עד 23 ל-12
+  const dateMatch1 = text.match(/עד\s+(?:ה-?)?(\d{1,2})\s+(?:ל-?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+  if (dateMatch1) {
+    const day = dateMatch1[1].padStart(2, '0');
+    const month = dateMatch1[2].padStart(2, '0');
+    let year = dateMatch1[3] ? (dateMatch1[3].length === 2 ? '20' + dateMatch1[3] : dateMatch1[3]) : String(refYear);
+    result.dueDate = year + '-' + month + '-' + day;
+    result.description = result.description.replace(dateMatch1[0], '').trim();
+  }
+
+  // Pattern: עד DD/MM/YYYY or DD.MM.YYYY
+  if (!result.dueDate) {
+    const dateMatch2 = text.match(/עד\s+(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?/);
+    if (dateMatch2) {
+      const day = dateMatch2[1].padStart(2, '0');
+      const month = dateMatch2[2].padStart(2, '0');
+      let year = dateMatch2[3] ? (dateMatch2[3].length === 2 ? '20' + dateMatch2[3] : dateMatch2[3]) : String(refYear);
+      result.dueDate = year + '-' + month + '-' + day;
+      result.description = result.description.replace(dateMatch2[0], '').trim();
+    }
+  }
+
+  // Pattern: "מחר", "עד מחר"
+  if (!result.dueDate && /מחר/.test(text)) {
+    const tomorrow = new Date(refDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    result.dueDate = tomorrow.toISOString().split('T')[0];
+  }
+
+  // Pattern: "עד סוף השבוע"
+  if (!result.dueDate && /סוף השבוע/.test(text)) {
+    const friday = new Date(refDate);
+    friday.setDate(friday.getDate() + (5 - friday.getDay() + 7) % 7);
+    result.dueDate = friday.toISOString().split('T')[0];
+  }
+
+  // Clean up description
+  result.description = result.description.replace(/\s{2,}/g, ' ').trim();
+  if (!result.description) result.description = text;
+
+  return result;
 }
 
 // ── Helpers ──
