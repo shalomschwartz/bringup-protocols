@@ -24,7 +24,7 @@ Spoken text: "${text}"
 
 Return ONLY valid JSON with these fields:
 {
-  "description": "the task description in Hebrew (clean, concise, professional)",
+  "description": "the task description in Hebrew — MUST NOT contain any date references or owner/responsibility mentions. Only the actual task content.",
   "owner": "the responsible person's name (MUST exactly match one of the available participants, or empty string if unclear)",
   "dueDate": "YYYY-MM-DD format (calculate from relative dates, or empty string if no date mentioned)"
 }
@@ -36,6 +36,9 @@ Rules:
 - If a specific date is mentioned like "עד ה-23" use the current month and year
 - If no date is mentioned but urgency is implied, default to 7 days from meeting date
 - Keep description concise but complete, in professional Hebrew
+- CRITICAL: The description MUST NOT include any date text (like "עד ה-30 למרץ", "עד יום חמישי", "מחר", "הראשון ליולי", etc.) — those go in dueDate only
+- CRITICAL: The description MUST NOT include responsibility text (like "באחריות מור", "דני צריך") — the owner name goes in owner only
+- Strip leading names and trailing conjunctions (ו, עד, את) from description
 - Return ONLY the JSON object, no other text`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {

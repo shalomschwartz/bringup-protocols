@@ -417,8 +417,11 @@ async function stopRecording() {
     }
 
     // Auto-add the task directly — zero keyboard interaction
+    // Clean the description: strip date/owner text that shouldn't be in the task content
+    var cleanDesc = cleanDescription(parsed.description || spokenText, ownerName);
+
     state.tasks.push({
-      desc: parsed.description || spokenText,
+      desc: cleanDesc,
       owner: ownerName,
       ownerId: ownerId,
       date: parsed.dueDate || '',
@@ -990,6 +993,47 @@ async function sendToMonday() {
 }
 
 // ── Local task parser (fallback when AI is unavailable) ──
+// Post-processing: strip date/owner text from description (runs after BOTH AI and local parsing)
+function cleanDescription(desc, ownerName) {
+  var clean = desc;
+
+  // Remove owner patterns: "באחריות X", "אחריות של X"
+  clean = clean.replace(/(?:באחריות|אחריות של?)\s+\S+(?:\s+\S+)?/gi, '');
+
+  // Remove owner first name at start of sentence (e.g. "דני צריך..." → "צריך...")
+  if (ownerName) {
+    var firstName = ownerName.split(' ')[0];
+    if (firstName.length > 1) {
+      clean = clean.replace(new RegExp('^' + firstName + '\\s+', ''), '');
+    }
+  }
+
+  // Remove Hebrew month date patterns: "עד ה-30 למרץ 2027", "ה-30 למרץ", "בתאריך 28 למרץ"
+  var monthWords = 'ינואר|פברואר|מרץ|מרס|אפריל|מאי|יוני|יולי|אוגוסט|ספטמבר|אוקטובר|נובמבר|דצמבר';
+  clean = clean.replace(new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:ה[\\-\\s]?)?\\d{1,2}\\s+(?:ל|ב|של\\s+)?(?:' + monthWords + ')(?:\\s+\\d{2,4})?', 'g'), '');
+
+  // Remove Hebrew ordinal date patterns: "הראשון ליולי 2026"
+  var ordWords = 'ראשון|הראשון|שני|השני|שלישי|השלישי|רביעי|הרביעי|חמישי|החמישי|שישי|השישי|שביעי|השביעי|שמיני|השמיני|תשיעי|התשיעי|עשירי|העשירי|עשרים|שלושים';
+  clean = clean.replace(new RegExp('(?:עד\\s+)?(?:' + ordWords + ')\\s+(?:ל|ב|של\\s+)?(?:' + monthWords + ')(?:\\s+\\d{2,4})?', 'g'), '');
+
+  // Remove numeric date patterns: "עד ה-23 ל-12 2027"
+  clean = clean.replace(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?\d{1,2}\s+(?:ל[\-\s]?)?\d{1,2}(?:\s+\d{2,4})?/g, '');
+
+  // Remove slash/dot dates: "30/03/2027", "30.03.2027"
+  clean = clean.replace(/(?:עד\s+)?\d{1,2}[\/\.]\d{1,2}(?:[\/\.]\d{2,4})?/g, '');
+
+  // Remove "מחר", "עד מחר", "עד סוף השבוע", "יום ראשון/שני/etc."
+  clean = clean.replace(/(?:עד\s+)?מחר/g, '');
+  clean = clean.replace(/(?:עד\s+)?סוף השבוע/g, '');
+  clean = clean.replace(/(?:עד\s+)?יום\s+(?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)(?:\s+הבא)?/g, '');
+
+  // Remove trailing dangling conjunctions/prepositions
+  clean = clean.replace(/\s+(ו|עד|את|של|ל|ב)\s*$/g, '');
+  clean = clean.replace(/\s{2,}/g, ' ').trim();
+
+  return clean || desc;
+}
+
 function localParseTask(text, participantNames, meetingDate) {
   const result = { description: text, owner: '', dueDate: '' };
 
