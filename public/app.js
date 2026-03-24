@@ -117,12 +117,6 @@ function handleProjectSelect(id) {
   const step = proj.columns.portfolio_project_step?.text || '';
   document.getElementById('proj-step').textContent = 'שלב: ' + (step || 'לא הוגדר');
 
-  const health = proj.columns.portfolio_project_rag?.text || '';
-  document.getElementById('proj-health').textContent = health ? 'בריאות: ' + health : '';
-
-  const timeline = proj.columns.portfolio_project_planned_timeline?.text || '';
-  document.getElementById('proj-timeline').textContent = timeline ? 'ציר זמן: ' + timeline : '';
-
   const badge = document.getElementById('proj-badge');
   badge.textContent = step || 'פרויקט';
 }
