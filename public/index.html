@@ -101,15 +101,16 @@
 
   <!-- SCREEN 3: Tasks -->
   <div class="screen" id="screen3">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
       <button class="rec-btn" id="recbtn" onclick="toggleRec()" style="flex:1;margin-bottom:0;">
-        <div class="rec-pulse"></div>
-        <span id="rectxt">הקלט משימה</span>
+        <div class="rec-pulse" id="rec-pulse"></div>
+        <span id="rectxt">🎙 הקלט משימה</span>
       </button>
-      <button class="add-btn" onclick="toggleManualTask()" style="flex:1;margin-top:0;border:1.5px solid #1f8c5f;border-radius:8px;padding:11px;font-size:14px;font-weight:500;">
+      <button class="manual-btn" onclick="toggleManualTask()">
         ✏️ הוסף ידנית
       </button>
     </div>
+    <div class="rec-status" id="rec-status" style="display:none;"></div>
     <div class="rec-form" id="rec-form">
       <div class="label">תיאור המשימה</div>
       <textarea class="input" id="task-desc" rows="2" style="resize:none;margin-bottom:8px;" placeholder="תאר את המשימה..."></textarea>

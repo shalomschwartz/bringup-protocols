@@ -294,6 +294,32 @@ body {
   margin-bottom: 12px;
   font-family: inherit;
   font-weight: 500;
+  transition: all 0.3s ease;
+}
+.rec-btn.recording {
+  background: #e24b4a;
+  color: #fff;
+  border-color: #e24b4a;
+}
+.rec-btn.recording .rec-pulse {
+  background: #fff;
+}
+.manual-btn {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid #1f8c5f;
+  border-radius: 8px;
+  color: #1f8c5f;
+  padding: 11px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 0;
+  font-family: inherit;
+  font-weight: 500;
 }
 .rec-pulse {
   width: 10px; height: 10px;
@@ -302,6 +328,14 @@ body {
   animation: pulse 1.2s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.rec-status {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  padding: 6px 0;
+  margin-bottom: 8px;
+  direction: rtl;
+}
 .rec-form {
   display: none;
   background: #f9f9f7;
@@ -310,6 +344,16 @@ body {
   padding: 12px;
   margin-bottom: 12px;
   direction: rtl;
+}
+/* Transcribing textarea style */
+.input.transcribing {
+  border-color: #e24b4a;
+  background: #fef2f2;
+  animation: transcribe-pulse 2s ease-in-out infinite;
+}
+@keyframes transcribe-pulse {
+  0%, 100% { border-color: #e24b4a; }
+  50% { border-color: #f97171; }
 }
 
 /* Preview doc */

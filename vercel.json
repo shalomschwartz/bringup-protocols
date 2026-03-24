@@ -4,6 +4,7 @@
     { "source": "/api/contacts", "destination": "/api/contacts" },
     { "source": "/api/users", "destination": "/api/users" },
     { "source": "/api/protocol", "destination": "/api/protocol" },
-    { "source": "/api/tasks", "destination": "/api/tasks" }
+    { "source": "/api/tasks", "destination": "/api/tasks" },
+    { "source": "/api/parse-task", "destination": "/api/parse-task" }
   ]
 }

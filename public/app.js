@@ -239,19 +239,196 @@ function addParticipant() {
 // ── Screen 3: Tasks ──
 let recOn = false;
 let manualOn = false;
+let recognition = null;
+let fullTranscript = '';
+
+// Check browser support
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 function toggleRec() {
-  recOn = !recOn;
+  if (recOn) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  if (!SpeechRecognition) {
+    alert('הדפדפן שלך לא תומך בהקלטה קולית.\nהשתמש ב-Chrome או Safari.');
+    toggleManualTask();
+    return;
+  }
+
+  recOn = true;
   manualOn = false;
-  document.getElementById('rectxt').textContent = recOn ? 'עצור הקלטה' : 'הקלט משימה';
-  document.getElementById('rec-form').style.display = recOn ? 'block' : 'none';
+  fullTranscript = '';
+
+  const recBtn = document.getElementById('recbtn');
+  const recTxt = document.getElementById('rectxt');
+  const recStatus = document.getElementById('rec-status');
+  const form = document.getElementById('rec-form');
+  const descField = document.getElementById('task-desc');
+
+  recBtn.classList.add('recording');
+  recTxt.textContent = '🔴 מקליט... לחץ לעצירה';
+  recStatus.style.display = 'block';
+  recStatus.textContent = '🎙 מקשיב...';
+  form.style.display = 'block';
+  descField.value = '';
+  descField.placeholder = 'דבר עכשיו...';
+  descField.classList.add('transcribing');
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'he-IL';
+  recognition.interimResults = true;
+  recognition.continuous = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    fullTranscript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        fullTranscript += transcript + ' ';
+      } else {
+        interim += transcript;
+      }
+    }
+    descField.value = fullTranscript + interim;
+  };
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    if (event.error === 'not-allowed') {
+      alert('לא ניתנה הרשאה למיקרופון.\nאנא אשר גישה למיקרופון בהגדרות הדפדפן.');
+    } else if (event.error === 'no-speech') {
+      recStatus.textContent = '🔇 לא זוהה דיבור, נסה שוב';
+    }
+    stopRecording();
+  };
+
+  recognition.onend = () => {
+    // If still in recording mode (didn't manually stop), restart
+    if (recOn) {
+      try { recognition.start(); } catch (e) { stopRecording(); }
+      return;
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch (e) {
+    console.error('Failed to start recognition:', e);
+    alert('שגיאה בהפעלת ההקלטה. נסה שוב.');
+    resetRecordingUI();
+  }
+}
+
+async function stopRecording() {
+  recOn = false;
+
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+    recognition = null;
+  }
+
+  const recBtn = document.getElementById('recbtn');
+  const recTxt = document.getElementById('rectxt');
+  const recStatus = document.getElementById('rec-status');
+  const descField = document.getElementById('task-desc');
+
+  recBtn.classList.remove('recording');
+  recTxt.textContent = '🎙 הקלט משימה';
+  descField.classList.remove('transcribing');
+  descField.placeholder = 'תאר את המשימה...';
+
+  const spokenText = descField.value.trim();
+  if (!spokenText) {
+    recStatus.textContent = '🔇 לא זוהה טקסט';
+    setTimeout(() => { recStatus.style.display = 'none'; }, 2000);
+    return;
+  }
+
+  // Parse with Claude AI
+  recStatus.textContent = '⏳ מנתח משימה...';
+  recStatus.style.display = 'block';
+
+  try {
+    const participants = state.participants
+      .filter(p => p.selected)
+      .map(p => p.name);
+
+    const res = await fetch('/api/parse-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: spokenText, participants }),
+    });
+    const parsed = await res.json();
+
+    if (parsed.error) throw new Error(parsed.error);
+
+    // Auto-fill description
+    if (parsed.description) {
+      descField.value = parsed.description;
+    }
+
+    // Auto-fill owner dropdown
+    if (parsed.owner) {
+      const ownerSel = document.getElementById('task-owner');
+      const ownerOpts = Array.from(ownerSel.options);
+      const match = ownerOpts.find(o =>
+        o.value === parsed.owner || o.value.includes(parsed.owner) || parsed.owner.includes(o.value)
+      );
+      if (match) ownerSel.value = match.value;
+    }
+
+    // Auto-fill date
+    if (parsed.dueDate) {
+      document.getElementById('task-date').value = parsed.dueDate;
+    }
+
+    recStatus.textContent = '✅ המשימה נותחה — בדוק ואשר';
+    setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
+  } catch (err) {
+    console.error('Parse error:', err);
+    recStatus.textContent = '⚠️ לא הצלחנו לנתח — ערוך ידנית';
+    setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
+    // Keep raw text in description — user edits manually
+  }
+}
+
+function resetRecordingUI() {
+  recOn = false;
+  manualOn = false;
+  const recBtn = document.getElementById('recbtn');
+  recBtn.classList.remove('recording');
+  document.getElementById('rectxt').textContent = '🎙 הקלט משימה';
+  document.getElementById('rec-status').style.display = 'none';
+  document.getElementById('rec-form').style.display = 'none';
 }
 
 function toggleManualTask() {
+  // Stop any active recording
+  if (recOn) {
+    if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
+    recOn = false;
+    document.getElementById('recbtn').classList.remove('recording');
+    document.getElementById('rectxt').textContent = '🎙 הקלט משימה';
+    document.getElementById('rec-status').style.display = 'none';
+  }
+
   manualOn = !manualOn;
-  recOn = false;
-  document.getElementById('rectxt').textContent = 'הקלט משימה';
-  document.getElementById('rec-form').style.display = manualOn ? 'block' : 'none';
+  const form = document.getElementById('rec-form');
+  const descField = document.getElementById('task-desc');
+  form.style.display = manualOn ? 'block' : 'none';
+  if (manualOn) {
+    descField.value = '';
+    descField.placeholder = 'תאר את המשימה...';
+    descField.classList.remove('transcribing');
+    document.getElementById('task-date').value = '';
+  }
 }
 
 function buildTaskOwnerDropdown() {
@@ -278,10 +455,7 @@ function addTask() {
   document.getElementById('task-desc').value = '';
   document.getElementById('task-date').value = '';
 
-  recOn = false;
-  manualOn = false;
-  document.getElementById('rectxt').textContent = 'הקלט משימה';
-  document.getElementById('rec-form').style.display = 'none';
+  resetRecordingUI();
 
   renderTasks();
 }
