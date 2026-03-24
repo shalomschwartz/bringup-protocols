@@ -781,12 +781,12 @@ function buildPdfHtml(data, bg1, bg2) {
   const COL_RESP = 95, COL_DATE = 95, COL_DESC = 407, COL_NUM = 46;
 
   const P1_TABLE_TOP = 324.577484;
-  const P1_DATA_H = 663.196411 - HEADER_ROW_H;
-  const P1_MAX = 10, P1_ROW_H = P1_DATA_H / P1_MAX;
+  const P1_ROW_H = 45; // Fixed row height - enough for 2 lines of text
+  const P1_MAX = 10;
 
   const P2_TABLE_TOP = 128;
-  const P2_DATA_H = 370 - HEADER_ROW_H;
-  const P2_MAX = 5, P2_ROW_H = P2_DATA_H / P2_MAX;
+  const P2_ROW_H = 45;
+  const P2_MAX = 15;
 
   const formattedDate = formatDateHe(data.date);
   const participants = (data.participants || []).join(', ');
@@ -800,7 +800,7 @@ function buildPdfHtml(data, bg1, bg2) {
     return '<th style="width:' + w + 'px;border:1px solid #000;font-size:14px;font-family:Arial,sans-serif;font-weight:bold;text-align:center;vertical-align:middle;padding:2px 4px;background:white;">' + label + '</th>';
   }
 
-  function makeRows(tArr, startIdx, rowH, maxRows) {
+  function makeRows(tArr, startIdx, rowH) {
     let html = '';
     tArr.forEach((t, i) => {
       html += '<tr style="height:' + rowH + 'px;">';
@@ -810,9 +810,6 @@ function buildPdfHtml(data, bg1, bg2) {
       html += '<td style="width:' + COL_NUM + 'px;text-align:center;' + cellS + '">' + (startIdx + i + 1) + '</td>';
       html += '</tr>';
     });
-    for (let i = 0; i < maxRows - tArr.length; i++) {
-      html += '<tr style="height:' + rowH + 'px;"><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td></tr>';
-    }
     return html;
   }
 
@@ -839,20 +836,38 @@ function buildPdfHtml(data, bg1, bg2) {
   p1 += '<div style="position:absolute;top:199.9px;left:0;width:' + PAGE_W + 'px;text-align:center;' + txtS + 'direction:rtl;">הנדון – <strong><u>' + escapeHtml(data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate + '</u></strong></div>';
   p1 += '<span style="position:absolute;top:234.5px;right:26px;' + txtS + 'direction:rtl;">משתתפים : ' + escapeHtml(participants) + '</span>';
 
+  // Helper: estimate text height based on char count and max width (~45 chars per line at 14px in 600px)
+  function estHeight(text, charsPerLine) {
+    if (!text) return 0;
+    var lines = Math.ceil(text.length / (charsPerLine || 45));
+    return Math.max(22, lines * 20 + 5);
+  }
+
   let nextTop = 268.9;
-  if (data.location) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>'; nextTop += 25; }
-  if (data.phase) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>'; nextTop += 25; }
-  if (data.summary) { p1 += '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>'; nextTop += Math.max(25, Math.ceil(data.summary.length / 60) * 20); }
+  if (data.location) {
+    p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
+    nextTop += estHeight('מיקום הפגישה : ' + data.location, 55);
+  }
+  if (data.phase) {
+    var phaseText = 'בשלב ביצוע הפגישה : ' + data.phase;
+    p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;display:block;">' + escapeHtml(phaseText) + '</span>';
+    nextTop += estHeight(phaseText, 45);
+  }
+  if (data.summary) {
+    p1 += '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>';
+    nextTop += estHeight(data.summary, 50);
+  }
   p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
-  const dynamicTableTop = Math.max(P1_TABLE_TOP, nextTop + 30);
-  p1 += makeTable(dynamicTableTop, makeRows(p1Tasks, 0, P1_ROW_H, P1_MAX));
+  nextTop += 28;
+  const dynamicTableTop = Math.max(P1_TABLE_TOP, nextTop);
+  p1 += makeTable(dynamicTableTop, makeRows(p1Tasks, 0, P1_ROW_H));
   if (!needsP2) p1 += footer;
   p1 += '</div>';
 
   let p2 = '';
   if (needsP2) {
     p2 = '<div style="' + pageStyle + '"><img style="' + bgStyle + '" src="' + bg2 + '" />';
-    p2 += makeTable(P2_TABLE_TOP, makeRows(p2Tasks, P1_MAX, P2_ROW_H, P2_MAX));
+    p2 += makeTable(P2_TABLE_TOP, makeRows(p2Tasks, P1_MAX, P2_ROW_H));
     p2 += footer + '</div>';
   }
 
