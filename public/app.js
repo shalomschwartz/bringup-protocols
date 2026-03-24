@@ -437,7 +437,10 @@ function buildTaskOwnerDropdown() {
   const selected = state.participants.filter(p => p.selected);
   selected.forEach(p => {
     const opt = document.createElement('option');
+    // Store both name and Monday user ID (user-XXXXX -> XXXXX)
+    const mondayId = p.id.startsWith('user-') ? p.id.replace('user-', '') : '';
     opt.value = p.name;
+    opt.dataset.userId = mondayId;
     opt.textContent = p.name;
     sel.appendChild(opt);
   });
@@ -445,12 +448,15 @@ function buildTaskOwnerDropdown() {
 
 function addTask() {
   const desc = document.getElementById('task-desc').value.trim();
-  const owner = document.getElementById('task-owner').value;
+  const ownerSel = document.getElementById('task-owner');
+  const owner = ownerSel.value;
+  const selectedOpt = ownerSel.options[ownerSel.selectedIndex];
+  const ownerId = selectedOpt ? selectedOpt.dataset.userId || '' : '';
   const date = document.getElementById('task-date').value;
 
   if (!desc) return;
 
-  state.tasks.push({ desc, owner, date });
+  state.tasks.push({ desc, owner, ownerId, date });
 
   document.getElementById('task-desc').value = '';
   document.getElementById('task-date').value = '';
@@ -546,6 +552,7 @@ async function sendToMonday() {
       const tasksPayload = state.tasks.map(t => ({
         name: t.desc + (t.owner ? ' [אחריות: ' + t.owner + ']' : ''),
         owner: t.owner,
+        ownerId: t.ownerId,
         date: t.date,
       }));
 

@@ -19,6 +19,7 @@ module.exports = async function handler(req, res) {
       const colVals = {};
       if (task.date) colVals.date__1 = { date: task.date };
       if (projectId) colVals.link_to__________________1 = { item_ids: [Number(projectId)] };
+      if (task.ownerId) colVals.people__1 = { personsAndTeams: [{ id: Number(task.ownerId), kind: 'person' }] };
 
       const data = await mondayQuery(
         `mutation ($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
