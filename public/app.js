@@ -776,102 +776,144 @@ function toBase64(url) {
 }
 
 function buildPdfHtml(data, bg1, bg2) {
-  const PAGE_W = 794, PAGE_H = 1123;
-  const TABLE_LEFT = 67.757309, TABLE_W = 643.454102, HEADER_ROW_H = 27.362671;
-  const COL_RESP = 95, COL_DATE = 95, COL_DESC = 407, COL_NUM = 46;
+  // === EXACT constants from the working chatbot ===
+  const PAGE_W       = 794;
+  const PAGE_H       = 1123;
+  const TABLE_LEFT   = 67.757309;
+  const TABLE_W      = 643.454102;
+  const HEADER_ROW_H = 27.362671;
 
-  const P1_TABLE_TOP = 324.577484;
-  const P1_ROW_H = 45; // Fixed row height - enough for 2 lines of text
+  // Column widths (physical left→right): אחריות | לביצוע עד | הסיכום | ס'פ
+  const COL_RESP = 95;
+  const COL_DATE = 95;
+  const COL_DESC = 407;
+  const COL_NUM  = 46;
+
+  // Page 1: table area — dynamic top, fixed bottom boundary
+  const P1_TABLE_TOP_DEFAULT = 324.577484;
+  const P1_TABLE_BOTTOM = 987.77;   // table ends here (leaves room for footer)
   const P1_MAX = 10;
 
+  // Page 2: table near top after logo
   const P2_TABLE_TOP = 128;
-  const P2_ROW_H = 45;
-  const P2_MAX = 15;
+  const P2_TABLE_BOTTOM = 987.77;
+  const P2_MAX = 5;
 
-  const formattedDate = formatDateHe(data.date);
-  const participants = (data.participants || []).join(', ');
-  const tasks = data.tasks || [];
-  const pageStyle = 'width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;position:relative;overflow:hidden;background:#fff;';
-  const bgStyle = 'position:absolute;top:0;left:0;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;z-index:0;';
-  const txtS = 'z-index:1;font-size:14px;font-family:Arial,sans-serif;';
-  const cellS = 'vertical-align:middle;padding:3px 4px;font-size:14px;font-family:Arial,sans-serif;background:white;border:1px solid #000;';
+  var formattedDate = formatDateHe(data.date);
+  var participants = (data.participants || []).join(', ');
+  var tasks = data.tasks || [];
+  var pageStyle = 'width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;position:relative;overflow:hidden;';
+  var bgStyle = 'position:absolute;top:0;left:0;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;z-index:0;';
+  var txtS = 'z-index:1;font-size:14px;font-family:Arial,sans-serif;';
+  var cellS = 'vertical-align:middle;padding:3px 4px;font-size:14px;font-family:Arial,sans-serif;background:white;border:1px solid #000;';
+
+  // === Table builders (identical to chatbot) ===
+  var tdStyle = function(w, align) {
+    return 'width:' + w + 'px;text-align:' + (align || 'center') + ';' + cellS;
+  };
 
   function th(w, label) {
     return '<th style="width:' + w + 'px;border:1px solid #000;font-size:14px;font-family:Arial,sans-serif;font-weight:bold;text-align:center;vertical-align:middle;padding:2px 4px;background:white;">' + label + '</th>';
   }
 
-  function makeRows(tArr, startIdx, rowH) {
-    let html = '';
-    tArr.forEach((t, i) => {
-      html += '<tr style="height:' + rowH + 'px;">';
-      html += '<td style="width:' + COL_RESP + 'px;text-align:center;' + cellS + 'word-wrap:break-word;">' + escapeHtml(t.owner || '') + '</td>';
-      html += '<td style="width:' + COL_DATE + 'px;text-align:center;' + cellS + '">' + (t.date ? formatDateHe(t.date) : '') + '</td>';
-      html += '<td style="width:' + COL_DESC + 'px;text-align:right;padding:3px 8px;' + cellS + 'direction:rtl;word-wrap:break-word;">' + escapeHtml(t.desc || '') + '</td>';
-      html += '<td style="width:' + COL_NUM + 'px;text-align:center;' + cellS + '">' + (startIdx + i + 1) + '</td>';
-      html += '</tr>';
+  function makeRows(tArr, startIdx, rowH, maxRows) {
+    var filled = '';
+    tArr.forEach(function(t, i) {
+      filled += '<tr style="height:' + rowH + 'px;">';
+      filled += '<td style="' + tdStyle(COL_RESP) + 'word-wrap:break-word;">' + escapeHtml(t.owner || '') + '</td>';
+      filled += '<td style="' + tdStyle(COL_DATE) + '">' + (t.date ? formatDateHe(t.date) : '') + '</td>';
+      filled += '<td style="' + tdStyle(COL_DESC, 'right') + 'padding:3px 8px;direction:rtl;word-wrap:break-word;">' + escapeHtml(t.desc || '') + '</td>';
+      filled += '<td style="' + tdStyle(COL_NUM) + '">' + (startIdx + i + 1) + '</td>';
+      filled += '</tr>';
     });
-    return html;
+    // Fill remaining rows with empty cells (matches original template)
+    var empty = '';
+    for (var i = 0; i < maxRows - tArr.length; i++) {
+      empty += '<tr style="height:' + rowH + 'px;">';
+      empty += '<td style="background:white;border:1px solid #000;"></td>';
+      empty += '<td style="background:white;border:1px solid #000;"></td>';
+      empty += '<td style="background:white;border:1px solid #000;"></td>';
+      empty += '<td style="background:white;border:1px solid #000;"></td>';
+      empty += '</tr>';
+    }
+    return filled + empty;
   }
 
   function makeTable(top, rows) {
-    return '<table style="position:absolute;top:' + top + 'px;left:' + TABLE_LEFT + 'px;width:' + TABLE_W + 'px;border-collapse:collapse;z-index:1;direction:ltr;"><thead><tr style="height:' + HEADER_ROW_H + 'px;">'
+    return '<table style="position:absolute;top:' + top + 'px;left:' + TABLE_LEFT + 'px;width:' + TABLE_W + 'px;border-collapse:collapse;z-index:1;direction:ltr;">'
+      + '<thead><tr style="height:' + HEADER_ROW_H + 'px;">'
       + th(COL_RESP, 'אחריות') + th(COL_DATE, 'לביצוע עד') + th(COL_DESC, 'הסיכום') + th(COL_NUM, "ס'פ")
       + '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
-  const p1Tasks = tasks.slice(0, P1_MAX);
-  const p2Tasks = tasks.slice(P1_MAX, P1_MAX + P2_MAX);
-  const needsP2 = tasks.length > P1_MAX;
+  // === Calculate dynamic table top based on text above ===
+  var nextTop = 268.9;
+  var locationHtml = '', phaseHtml = '', summaryHtml = '', sikcumHtml = '';
 
-  // Footer
-  const footerY = PAGE_H - 85;
-  const footer = '<div style="position:absolute;top:' + footerY + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
+  if (data.location) {
+    locationHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
+    nextTop += 24;
+  }
+  if (data.phase) {
+    phaseHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>';
+    nextTop += 24;
+  }
+  if (data.summary) {
+    var summaryLines = Math.ceil(data.summary.length / 50);
+    summaryHtml = '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>';
+    nextTop += Math.max(24, summaryLines * 20);
+  }
+  sikcumHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
+  nextTop += 30;
+
+  // Table starts after all text, but never before default position
+  var tableTop = Math.max(P1_TABLE_TOP_DEFAULT, nextTop);
+
+  // Calculate row height to fill available space (like chatbot)
+  var p1DataH = P1_TABLE_BOTTOM - tableTop - HEADER_ROW_H;
+  var p1RowH = p1DataH / P1_MAX;
+
+  var p2DataH = P2_TABLE_BOTTOM - P2_TABLE_TOP - HEADER_ROW_H;
+  var p2RowH = p2DataH / P2_MAX;
+
+  // Split tasks between pages
+  var p1Tasks = tasks.slice(0, P1_MAX);
+  var p2Tasks = tasks.slice(P1_MAX, P1_MAX + P2_MAX);
+  var needsP2 = tasks.length > P1_MAX;
+
+  // === Build pages (same structure as chatbot) ===
+  var page1 = '<div style="' + pageStyle + '">'
+    + '<img style="' + bgStyle + '" src="' + bg1 + '" />'
+    + '<span style="position:absolute;top:132.6px;left:66.5px;' + txtS + 'direction:ltr;">' + formattedDate + '</span>'
+    + '<span style="position:absolute;top:165.6px;right:26px;' + txtS + 'direction:rtl;">לכבוד רשימת התפוצה</span>'
+    + '<div style="position:absolute;top:199.9px;left:0;width:' + PAGE_W + 'px;text-align:center;' + txtS + 'direction:rtl;">הנדון – <strong><u>' + escapeHtml(data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate + '</u></strong></div>'
+    + '<span style="position:absolute;top:234.5px;right:26px;' + txtS + 'direction:rtl;">משתתפים : ' + escapeHtml(participants) + '</span>'
+    + locationHtml + phaseHtml + summaryHtml + sikcumHtml
+    + makeTable(tableTop, makeRows(p1Tasks, 0, p1RowH, P1_MAX))
+    + '</div>';
+
+  var page2 = '';
+  if (needsP2) {
+    page2 = '<div style="' + pageStyle + '">'
+      + '<img style="' + bgStyle + '" src="' + bg2 + '" />'
+      + makeTable(P2_TABLE_TOP, makeRows(p2Tasks, P1_MAX, p2RowH, P2_MAX))
+      + '</div>';
+  }
+
+  // Footer on last page
+  var footerHtml = '<div style="position:absolute;top:' + (PAGE_H - 85) + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
     + '<div>רשם: ' + escapeHtml(data.recorder || '') + '</div>'
     + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
 
-  // Page 1
-  let p1 = '<div style="' + pageStyle + '"><img style="' + bgStyle + '" src="' + bg1 + '" />';
-  p1 += '<span style="position:absolute;top:132.6px;left:66.5px;' + txtS + 'direction:ltr;">' + formattedDate + '</span>';
-  p1 += '<span style="position:absolute;top:165.6px;right:26px;' + txtS + 'direction:rtl;">לכבוד רשימת התפוצה</span>';
-  p1 += '<div style="position:absolute;top:199.9px;left:0;width:' + PAGE_W + 'px;text-align:center;' + txtS + 'direction:rtl;">הנדון – <strong><u>' + escapeHtml(data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate + '</u></strong></div>';
-  p1 += '<span style="position:absolute;top:234.5px;right:26px;' + txtS + 'direction:rtl;">משתתפים : ' + escapeHtml(participants) + '</span>';
-
-  // Helper: estimate text height based on char count and max width (~45 chars per line at 14px in 600px)
-  function estHeight(text, charsPerLine) {
-    if (!text) return 0;
-    var lines = Math.ceil(text.length / (charsPerLine || 45));
-    return Math.max(22, lines * 20 + 5);
-  }
-
-  let nextTop = 268.9;
-  if (data.location) {
-    p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
-    nextTop += estHeight('מיקום הפגישה : ' + data.location, 55);
-  }
-  if (data.phase) {
-    var phaseText = 'בשלב ביצוע הפגישה : ' + data.phase;
-    p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;display:block;">' + escapeHtml(phaseText) + '</span>';
-    nextTop += estHeight(phaseText, 45);
-  }
-  if (data.summary) {
-    p1 += '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>';
-    nextTop += estHeight(data.summary, 50);
-  }
-  p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
-  nextTop += 28;
-  const dynamicTableTop = Math.max(P1_TABLE_TOP, nextTop);
-  p1 += makeTable(dynamicTableTop, makeRows(p1Tasks, 0, P1_ROW_H));
-  if (!needsP2) p1 += footer;
-  p1 += '</div>';
-
-  let p2 = '';
   if (needsP2) {
-    p2 = '<div style="' + pageStyle + '"><img style="' + bgStyle + '" src="' + bg2 + '" />';
-    p2 += makeTable(P2_TABLE_TOP, makeRows(p2Tasks, P1_MAX, P2_ROW_H));
-    p2 += footer + '</div>';
+    page2 = page2.replace('</div><!--LAST-->', footerHtml + '</div>');
+    // Append footer before closing last page div
+    page2 = page2.slice(0, -6) + footerHtml + '</div>';
+  } else {
+    page1 = page1.slice(0, -6) + footerHtml + '</div>';
   }
 
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;">' + p1 + p2 + '</body></html>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;">' + page1 + page2 + '</body></html>';
 }
 
 async function sendToMonday() {
