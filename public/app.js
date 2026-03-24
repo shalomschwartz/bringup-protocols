@@ -722,7 +722,7 @@ async function downloadDocumentPDF() {
 
     // Hidden render container
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:0;left:0;width:794px;z-index:-1;pointer-events:none;opacity:0;';
+    container.style.cssText = 'position:fixed;top:0;left:0;width:794px;z-index:-1;pointer-events:none;';
     document.body.appendChild(container);
 
     parsed.querySelectorAll('body > div').forEach(page => {
@@ -906,8 +906,6 @@ function buildPdfHtml(data, bg1, bg2) {
     + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
 
   if (needsP2) {
-    page2 = page2.replace('</div><!--LAST-->', footerHtml + '</div>');
-    // Append footer before closing last page div
     page2 = page2.slice(0, -6) + footerHtml + '</div>';
   } else {
     page1 = page1.slice(0, -6) + footerHtml + '</div>';
