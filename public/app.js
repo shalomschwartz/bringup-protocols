@@ -241,6 +241,8 @@ let recOn = false;
 let manualOn = false;
 let recognition = null;
 let fullTranscript = '';
+let silenceTimer = null;
+const SILENCE_TIMEOUT = 3000; // Auto-stop after 3 seconds of silence
 
 // Check browser support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -267,17 +269,14 @@ function startRecording() {
   const recBtn = document.getElementById('recbtn');
   const recTxt = document.getElementById('rectxt');
   const recStatus = document.getElementById('rec-status');
-  const form = document.getElementById('rec-form');
-  const descField = document.getElementById('task-desc');
+
+  // Hide form during recording — only show live status
+  document.getElementById('rec-form').style.display = 'none';
 
   recBtn.classList.add('recording');
-  recTxt.textContent = '🔴 מקליט... לחץ לעצירה';
+  recTxt.textContent = '🔴 מקליט...';
   recStatus.style.display = 'block';
-  recStatus.textContent = '🎙 מקשיב...';
-  form.style.display = 'block';
-  descField.value = '';
-  descField.placeholder = 'דבר עכשיו...';
-  descField.classList.add('transcribing');
+  recStatus.textContent = '🎙 מקשיב... דבר עכשיו';
 
   recognition = new SpeechRecognition();
   recognition.lang = 'he-IL';
@@ -296,7 +295,18 @@ function startRecording() {
         interim += transcript;
       }
     }
-    descField.value = fullTranscript + interim;
+
+    const currentText = (fullTranscript + interim).trim();
+    recStatus.textContent = '🎙 ' + (currentText.length > 60 ? '...' + currentText.slice(-60) : currentText);
+
+    // Reset silence timer — user is still speaking
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      // User stopped speaking for 3 seconds — auto-stop
+      if (recOn && fullTranscript.trim().length > 0) {
+        stopRecording();
+      }
+    }, SILENCE_TIMEOUT);
   };
 
   recognition.onerror = (event) => {
@@ -310,7 +320,6 @@ function startRecording() {
   };
 
   recognition.onend = () => {
-    // If still in recording mode (didn't manually stop), restart
     if (recOn) {
       try { recognition.start(); } catch (e) { stopRecording(); }
       return;
@@ -328,6 +337,7 @@ function startRecording() {
 
 async function stopRecording() {
   recOn = false;
+  clearTimeout(silenceTimer);
 
   if (recognition) {
     try { recognition.stop(); } catch (e) {}
@@ -337,21 +347,18 @@ async function stopRecording() {
   const recBtn = document.getElementById('recbtn');
   const recTxt = document.getElementById('rectxt');
   const recStatus = document.getElementById('rec-status');
-  const descField = document.getElementById('task-desc');
 
   recBtn.classList.remove('recording');
   recTxt.textContent = '🎙 הקלט משימה';
-  descField.classList.remove('transcribing');
-  descField.placeholder = 'תאר את המשימה...';
 
-  const spokenText = descField.value.trim();
+  const spokenText = fullTranscript.trim();
   if (!spokenText) {
     recStatus.textContent = '🔇 לא זוהה טקסט';
     setTimeout(() => { recStatus.style.display = 'none'; }, 2000);
     return;
   }
 
-  // Parse with Claude AI and auto-add task
+  // Parse with Claude AI and auto-add task — no form needed
   recStatus.textContent = '⏳ מנתח משימה...';
   recStatus.style.display = 'block';
 
@@ -381,7 +388,7 @@ async function stopRecording() {
       }
     }
 
-    // Auto-add the task directly — no keyboard needed
+    // Auto-add the task directly — zero keyboard interaction
     state.tasks.push({
       desc: parsed.description || spokenText,
       owner: ownerName,
@@ -390,16 +397,19 @@ async function stopRecording() {
     });
 
     renderTasks();
-    resetRecordingUI();
 
-    recStatus.textContent = '✅ משימה נוספה: ' + (parsed.description || spokenText).substring(0, 40) + '...';
+    const summary = [];
+    if (ownerName) summary.push('אחריות: ' + ownerName);
+    if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
+    recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
     recStatus.style.display = 'block';
-    setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
+    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
   } catch (err) {
     console.error('Parse error:', err);
-    // Fallback: show form for manual editing
+    // Fallback: put text in form for manual editing
     recStatus.textContent = '⚠️ לא הצלחנו לנתח — ערוך ידנית';
     document.getElementById('rec-form').style.display = 'block';
+    document.getElementById('task-desc').value = spokenText;
     manualOn = true;
     setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
   }
@@ -408,6 +418,7 @@ async function stopRecording() {
 function resetRecordingUI() {
   recOn = false;
   manualOn = false;
+  clearTimeout(silenceTimer);
   const recBtn = document.getElementById('recbtn');
   recBtn.classList.remove('recording');
   document.getElementById('rectxt').textContent = '🎙 הקלט משימה';
