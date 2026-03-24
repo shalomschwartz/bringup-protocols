@@ -229,17 +229,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const participantNames = (participants || []).join(', ');
 
   // ── Compute dynamic Y offsets for page 1 ──
-  let nextY = 235; // after participants line
+  // Participants line is at 235px. Each subsequent line adds 34px.
+  let nextY = 269; // first available line after participants (235)
 
   const hasPhase = phase && phase.length > 0;
   const hasLocation = location && location.length > 0;
 
-  if (hasPhase) nextY += 34;
-  if (hasLocation) nextY += 34;
+  // Build optional lines in order
+  let optionalLines = '';
+  if (hasLocation) {
+    optionalLines += `<div class="p1-phase" style="top:${nextY}px;">מיקום הפגישה : ${esc(location)}</div>`;
+    nextY += 34;
+  }
+  if (hasPhase) {
+    optionalLines += `<div class="p1-phase" style="top:${nextY}px;">בשלב ביצוע הפגישה : ${esc(phase)}</div>`;
+    nextY += 34;
+  }
 
-  // "להלן הסיכומים" line
   const introY = nextY;
-  nextY += 32;
+  nextY += 34;
   const tableY = nextY;
 
   // ── PAGE 1 ──
@@ -255,8 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="p1-to">לכבוד רשימת התפוצה</div>
       <div class="p1-subject">הנדון – <u>${esc(projectName || '')} – סיכום פגישה שבועית מתאריך ${formattedDate}</u></div>
       <div class="p1-participants">משתתפים : ${esc(participantNames)}</div>
-      ${hasPhase ? '<div class="p1-phase" style="top:' + (235 + (hasLocation ? 34 : 0)) + 'px;">בשלב ביצוע הפגישה : ' + esc(phase) + '</div>' : ''}
-      ${hasLocation ? '<div class="p1-phase" style="top:269px;">מיקום : ' + esc(location) + '</div>' : ''}
+      ${optionalLines}
       <div class="p1-intro" style="top:${introY}px;">להלן הסיכומים:-</div>
       <div class="p1-table-wrap" style="top:${tableY}px;">
         ${taskTableHTML(p1Tasks, 1)}

@@ -276,6 +276,16 @@ body {
   font-family: inherit;
 }
 .task-remove:hover { color: #e24b4a; }
+.task-edit-btn {
+  font-size: 14px;
+  color: #1f8c5f;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0 2px;
+}
+.task-edit-btn:hover { color: #16704c; }
 
 /* Record button */
 .rec-btn {

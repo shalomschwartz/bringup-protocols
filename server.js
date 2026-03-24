@@ -239,16 +239,17 @@ const CLAUDE_API_KEY = 'sk-ant-api03-4k-mco0SbK2q8hy1Qe1SFa-I9ZgHbV5qW1o4iC_bDX8
 
 app.post('/api/parse-task', async (req, res) => {
   try {
-    const { text, participants } = req.body;
+    const { text, participants, meetingDate } = req.body;
     if (!text) return res.status(400).json({ error: 'text is required' });
 
     const today = new Date().toISOString().split('T')[0];
     const dayName = new Date().toLocaleDateString('he-IL', { weekday: 'long' });
+    const refDate = meetingDate || today;
 
     const prompt = `You are a task parser for a Hebrew construction project management app.
 Given this spoken Hebrew text from a meeting, extract the task details.
 
-Today is ${today} (${dayName}).
+Today is ${today} (${dayName}). The meeting date is ${refDate}.
 
 Available participants: ${(participants || []).join(', ')}
 
@@ -256,15 +257,18 @@ Spoken text: "${text}"
 
 Return ONLY valid JSON with these fields:
 {
-  "description": "the task description in Hebrew (clean and concise)",
-  "owner": "the responsible person's name (must match one of the available participants, or empty string if unclear)",
-  "dueDate": "YYYY-MM-DD format (calculate from relative dates like 'עד יום ראשון', or empty string if no date mentioned)"
+  "description": "the task description in Hebrew (clean, concise, professional)",
+  "owner": "the responsible person's name (MUST exactly match one of the available participants, or empty string if unclear)",
+  "dueDate": "YYYY-MM-DD format (calculate from relative dates, or empty string if no date mentioned)"
 }
 
 Rules:
-- Match owner name to the closest participant name (e.g. "מור" matches "מור", "טלי" matches "טלי קרן")
-- For relative dates: "מחר" = tomorrow, "יום ראשון" = next Sunday, "עד סוף השבוע" = this Friday, etc.
-- Keep description concise but complete
+- Match owner name EXACTLY to one of the available participants (e.g. "דני" matches "דני הוכמן", "טלי" matches "טלי קרן")
+- Always try to identify the responsible person from context (who was asked to do something)
+- For relative dates: "מחר" = tomorrow, "יום ראשון הבא" = next Sunday, "עד סוף השבוע" = this Friday, "בעוד שבוע" = +7 days
+- If a specific date is mentioned like "עד ה-23" use the current month and year
+- If no date is mentioned but urgency is implied, default to 7 days from meeting date
+- Keep description concise but complete, in professional Hebrew
 - Return ONLY the JSON object, no other text`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {

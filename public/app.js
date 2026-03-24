@@ -351,51 +351,57 @@ async function stopRecording() {
     return;
   }
 
-  // Parse with Claude AI
+  // Parse with Claude AI and auto-add task
   recStatus.textContent = '⏳ מנתח משימה...';
   recStatus.style.display = 'block';
 
   try {
-    const participants = state.participants
-      .filter(p => p.selected)
-      .map(p => p.name);
+    const selectedParticipants = state.participants.filter(p => p.selected);
+    const participantNames = selectedParticipants.map(p => p.name);
+    const meetingDate = document.getElementById('meeting-date').value;
 
     const res = await fetch('/api/parse-task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: spokenText, participants }),
+      body: JSON.stringify({ text: spokenText, participants: participantNames, meetingDate }),
     });
     const parsed = await res.json();
 
     if (parsed.error) throw new Error(parsed.error);
 
-    // Auto-fill description
-    if (parsed.description) {
-      descField.value = parsed.description;
-    }
-
-    // Auto-fill owner dropdown
-    if (parsed.owner) {
-      const ownerSel = document.getElementById('task-owner');
-      const ownerOpts = Array.from(ownerSel.options);
-      const match = ownerOpts.find(o =>
-        o.value === parsed.owner || o.value.includes(parsed.owner) || parsed.owner.includes(o.value)
+    // Find the matching participant to get their Monday user ID
+    const ownerName = parsed.owner || '';
+    let ownerId = '';
+    if (ownerName) {
+      const matchedParticipant = selectedParticipants.find(p =>
+        p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
       );
-      if (match) ownerSel.value = match.value;
+      if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
+        ownerId = matchedParticipant.id.replace('user-', '');
+      }
     }
 
-    // Auto-fill date
-    if (parsed.dueDate) {
-      document.getElementById('task-date').value = parsed.dueDate;
-    }
+    // Auto-add the task directly — no keyboard needed
+    state.tasks.push({
+      desc: parsed.description || spokenText,
+      owner: ownerName,
+      ownerId: ownerId,
+      date: parsed.dueDate || '',
+    });
 
-    recStatus.textContent = '✅ המשימה נותחה — בדוק ואשר';
+    renderTasks();
+    resetRecordingUI();
+
+    recStatus.textContent = '✅ משימה נוספה: ' + (parsed.description || spokenText).substring(0, 40) + '...';
+    recStatus.style.display = 'block';
     setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
   } catch (err) {
     console.error('Parse error:', err);
+    // Fallback: show form for manual editing
     recStatus.textContent = '⚠️ לא הצלחנו לנתח — ערוך ידנית';
+    document.getElementById('rec-form').style.display = 'block';
+    manualOn = true;
     setTimeout(() => { recStatus.style.display = 'none'; }, 3000);
-    // Keep raw text in description — user edits manually
   }
 }
 
@@ -475,7 +481,7 @@ function renderTasks() {
   const list = document.getElementById('tasks-list');
 
   if (state.tasks.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:20px 0;">\u05d0\u05d9\u05df \u05de\u05e9\u05d9\u05de\u05d5\u05ea \u05e2\u05d3\u05d9\u05d9\u05df</div>';
+    list.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:20px 0;">אין משימות עדיין</div>';
     return;
   }
 
@@ -484,18 +490,96 @@ function renderTasks() {
     const formattedDate = t.date ? formatDateHe(t.date) : '';
     const row = document.createElement('div');
     row.className = 'task-row';
-    row.innerHTML = `
-      <div class="task-top">
-        <div class="task-text">${escapeHtml(t.desc)}</div>
-        <button class="task-remove" onclick="removeTask(${idx})">\u2715</button>
-      </div>
-      <div class="task-meta">
-        ${formattedDate ? '<span class="task-date">' + formattedDate + '</span>' : ''}
-        ${t.owner ? '<span class="task-owner">' + escapeHtml(t.owner) + '</span>' : ''}
-      </div>
-    `;
+    row.dataset.idx = idx;
+
+    if (t._editing) {
+      // Edit mode
+      row.innerHTML = `
+        <div class="task-edit-form" style="direction:rtl;">
+          <div class="label">תיאור</div>
+          <textarea class="input" id="edit-desc-${idx}" rows="2" style="resize:none;margin-bottom:6px;">${escapeHtml(t.desc)}</textarea>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <div class="label">אחריות</div>
+              <select class="select" id="edit-owner-${idx}" style="margin-bottom:0;"></select>
+            </div>
+            <div style="flex:1;">
+              <div class="label">תאריך יעד</div>
+              <input type="date" class="input" id="edit-date-${idx}" value="${t.date || ''}" style="margin-bottom:0;" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn-primary" style="flex:1;margin-bottom:0;font-size:13px;padding:8px;" onclick="saveTaskEdit(${idx})">✓ שמור</button>
+            <button class="btn-secondary" style="flex:1;margin-bottom:0;font-size:13px;padding:8px;" onclick="cancelTaskEdit(${idx})">✕ ביטול</button>
+          </div>
+        </div>
+      `;
+      // Populate owner dropdown after DOM is ready
+      setTimeout(() => {
+        const sel = document.getElementById('edit-owner-' + idx);
+        if (sel) {
+          const selected = state.participants.filter(p => p.selected);
+          selected.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            opt.textContent = p.name;
+            sel.appendChild(opt);
+          });
+          // Also add custom option if owner isn't in participants
+          if (t.owner && !selected.find(p => p.name === t.owner)) {
+            const opt = document.createElement('option');
+            opt.value = t.owner;
+            opt.textContent = t.owner;
+            sel.appendChild(opt);
+          }
+          sel.value = t.owner || '';
+        }
+      }, 0);
+    } else {
+      // View mode
+      row.innerHTML = `
+        <div class="task-top">
+          <div class="task-text">${escapeHtml(t.desc)}</div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="task-edit-btn" onclick="editTask(${idx})">✏️</button>
+            <button class="task-remove" onclick="removeTask(${idx})">✕</button>
+          </div>
+        </div>
+        <div class="task-meta">
+          ${formattedDate ? '<span class="task-date">' + formattedDate + '</span>' : ''}
+          ${t.owner ? '<span class="task-owner">' + escapeHtml(t.owner) + '</span>' : ''}
+        </div>
+      `;
+    }
     list.appendChild(row);
   });
+}
+
+function editTask(idx) {
+  state.tasks[idx]._editing = true;
+  renderTasks();
+}
+
+function cancelTaskEdit(idx) {
+  delete state.tasks[idx]._editing;
+  renderTasks();
+}
+
+function saveTaskEdit(idx) {
+  const desc = document.getElementById('edit-desc-' + idx).value.trim();
+  const owner = document.getElementById('edit-owner-' + idx).value;
+  const date = document.getElementById('edit-date-' + idx).value;
+
+  if (desc) state.tasks[idx].desc = desc;
+  state.tasks[idx].owner = owner;
+  state.tasks[idx].date = date;
+
+  // Update owner ID
+  const matchedP = state.participants.find(p => p.selected && p.name === owner);
+  state.tasks[idx].ownerId = matchedP && matchedP.id.startsWith('user-') ? matchedP.id.replace('user-', '') : '';
+
+  delete state.tasks[idx]._editing;
+  renderTasks();
 }
 
 // ── Screen 4: Preview & Send ──
