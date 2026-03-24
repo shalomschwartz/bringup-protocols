@@ -76,6 +76,8 @@
     <input type="date" class="input" id="meeting-date" />
     <div class="label">מיקום / ערוץ</div>
     <input type="text" class="input" id="meeting-location" placeholder="לדוגמה: באתר הבנייה" />
+    <div class="label">סיכום פגישה</div>
+    <textarea class="input" id="meeting-summary" rows="3" style="resize:vertical;" placeholder="תיאור קצר של מהלך הפגישה, נושאים שנדונו..."></textarea>
     <div class="nav-row">
       <button class="btn-back" style="visibility:hidden;">→ חזרה</button>
       <button class="btn-next" onclick="goStep(2)">← הבא</button>
@@ -149,6 +151,7 @@
       <div class="confirm-row"><span class="confirm-label">תאריך</span><span class="confirm-val" id="preview-date"></span></div>
       <div class="confirm-row"><span class="confirm-label">מיקום</span><span class="confirm-val" id="preview-location"></span></div>
       <div class="confirm-row"><span class="confirm-label">משתתפים</span><span class="confirm-val" id="preview-participants"></span></div>
+      <div class="confirm-row" id="preview-summary-row" style="display:none;"><span class="confirm-label">סיכום</span><span class="confirm-val" id="preview-summary"></span></div>
       <div class="confirm-divider"></div>
       <div class="confirm-row"><span class="confirm-label">משימות</span><span class="confirm-val confirm-count" id="preview-task-count">0</span></div>
       <div id="preview-tasks-list" class="confirm-tasks"></div>

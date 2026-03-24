@@ -8,12 +8,13 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { name, date, location, projectId, recorderId, taskIds } = req.body;
+    const { name, date, location, summary, projectId, recorderId, taskIds } = req.body;
 
     const colVals = {};
 
     if (date) colVals.date4 = { date };
     if (location) colVals.text_mkkstk45 = location;
+    if (summary) colVals.long_text__1 = { text: summary };
     if (projectId) colVals.connect_boards__1 = { item_ids: [Number(projectId)] };
     if (recorderId) colVals.people_mkktj646 = { personsAndTeams: [{ id: Number(recorderId), kind: 'person' }] };
     if (taskIds && taskIds.length > 0) {

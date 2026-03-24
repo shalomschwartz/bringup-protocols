@@ -139,7 +139,7 @@ app.get('/api/users', async (req, res) => {
 // POST /api/protocol — create a new protocol item on board 1718595738 (פרוטוקול)
 app.post('/api/protocol', async (req, res) => {
   try {
-    const { name, date, location, projectId, recorderId, taskIds } = req.body;
+    const { name, date, location, summary, projectId, recorderId, taskIds } = req.body;
 
     const PROTOCOL_BOARD = 1718595738;
     const colVals = {};
@@ -149,6 +149,9 @@ app.post('/api/protocol', async (req, res) => {
 
     // Location
     if (location) colVals.text_mkkstk45 = location;
+
+    // Meeting summary
+    if (summary) colVals.long_text__1 = { text: summary };
 
     // Link to project
     if (projectId) colVals.connect_boards__1 = { item_ids: [Number(projectId)] };

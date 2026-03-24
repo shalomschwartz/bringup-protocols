@@ -635,6 +635,18 @@ function buildPreview() {
   document.getElementById('preview-participants').textContent =
     selected.map(p => p.name).join(', ') || 'לא נבחרו';
 
+  // Show summary if provided
+  const summaryVal = document.getElementById('meeting-summary').value.trim();
+  const summaryRow = document.getElementById('preview-summary-row');
+  if (summaryRow) {
+    if (summaryVal) {
+      summaryRow.style.display = 'flex';
+      document.getElementById('preview-summary').textContent = summaryVal.length > 60 ? summaryVal.substring(0, 60) + '...' : summaryVal;
+    } else {
+      summaryRow.style.display = 'none';
+    }
+  }
+
   // Build compact tasks summary
   document.getElementById('preview-task-count').textContent = state.tasks.length;
   const tasksList = document.getElementById('preview-tasks-list');
@@ -664,6 +676,7 @@ function storeProtocolData() {
   const proj = state.selectedProject;
   const date = document.getElementById('meeting-date').value;
   const location = document.getElementById('meeting-location').value;
+  const summary = document.getElementById('meeting-summary').value;
   const selected = state.participants.filter(p => p.selected);
   const phase = proj?.columns?.portfolio_project_step?.text || '';
   const recorder = selected.length > 0 ? selected[0].name : '';
@@ -672,6 +685,7 @@ function storeProtocolData() {
     projectName: proj ? proj.name : '',
     date,
     location,
+    summary,
     participants: selected.map(p => p.name),
     tasks: state.tasks.map(t => ({ desc: t.desc, owner: t.owner, date: t.date })),
     phase,
@@ -828,6 +842,7 @@ function buildPdfHtml(data, bg1, bg2) {
   let nextTop = 268.9;
   if (data.location) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>'; nextTop += 25; }
   if (data.phase) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>'; nextTop += 25; }
+  if (data.summary) { p1 += '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>'; nextTop += Math.max(25, Math.ceil(data.summary.length / 60) * 20); }
   p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
   const dynamicTableTop = Math.max(P1_TABLE_TOP, nextTop + 30);
   p1 += makeTable(dynamicTableTop, makeRows(p1Tasks, 0, P1_ROW_H, P1_MAX));
@@ -860,6 +875,7 @@ async function sendToMonday() {
     const selected = state.participants.filter(p => p.selected);
 
     const protocolName = 'פרוטוקול' + (proj ? ' — ' + proj.name : '') + ' — ' + formatDateHe(date);
+    const summary = document.getElementById('meeting-summary').value;
 
     // Find recorder's Monday user ID
     const recorder = selected.length > 0 ? selected[0] : null;
@@ -896,6 +912,7 @@ async function sendToMonday() {
         name: protocolName,
         date,
         location,
+        summary,
         projectId: proj?.id || '',
         recorderId,
         taskIds,
