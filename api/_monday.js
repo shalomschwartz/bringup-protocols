@@ -6,7 +6,7 @@ async function mondayQuery(query, variables) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: process.env.MONDAY_API_KEY,
+      Authorization: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ0MDg4NTQyOCwiYWFpIjoxMSwidWlkIjo2ODM2OTE2NywiaWFkIjoiMjAyNC0xMS0yNVQxNDo1MDoxMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjYwMjU0NjcsInJnbiI6ImV1YzEifQ.A1QEGxOKIkdDEZHvyBiJerxztc9grWVdI3EjEmxM38U',
     },
     body: JSON.stringify({ query, variables }),
   });
