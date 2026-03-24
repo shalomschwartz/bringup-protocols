@@ -300,6 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Render
   const container = document.getElementById('pages');
   allPages.forEach(p => container.appendChild(p));
+
+  // Auto-download PDF if ?auto=1 flag is set
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('auto') === '1') {
+    // Wait for images to load, then auto-trigger PDF download
+    setTimeout(() => { downloadPDF(); }, 1500);
+  }
 });
 
 // ── Helpers ──

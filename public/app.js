@@ -647,8 +647,8 @@ function storeProtocolData() {
 
 function downloadDocumentPDF() {
   storeProtocolData();
-  // Open document page in hidden iframe, trigger PDF download
-  window.open('document.html', '_blank');
+  // Open document page with auto-download flag
+  window.open('document.html?auto=1', '_blank');
 }
 
 async function sendToMonday() {
