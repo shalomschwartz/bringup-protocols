@@ -684,10 +684,167 @@ function storeProtocolData() {
   localStorage.setItem('bringup_protocol', JSON.stringify(protocolData));
 }
 
-function downloadDocumentPDF() {
+async function downloadDocumentPDF() {
+  const btn = document.querySelector('[onclick="downloadDocumentPDF()"]');
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ מייצר PDF...'; btn.disabled = true; }
+
   storeProtocolData();
-  // Open document page with auto-download flag
-  window.open('document.html?auto=1', '_blank');
+  const data = JSON.parse(localStorage.getItem('bringup_protocol'));
+
+  try {
+    // Load libraries dynamically (same approach as meeting-chatbot)
+    const [html2canvas, jsPDFModule] = await Promise.all([
+      loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas'),
+      loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js', 'jspdf'),
+    ]);
+    const { jsPDF } = window.jspdf;
+
+    // Convert bg images to base64 (bypass CORS)
+    const [bg1, bg2] = await Promise.all([
+      toBase64('bgimg/bg00001.jpg'),
+      toBase64('bgimg/bg00002.jpg'),
+    ]);
+
+    const docHTML = buildPdfHtml(data, bg1, bg2);
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(docHTML, 'text/html');
+
+    // Hidden render container
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:0;width:794px;z-index:-1;pointer-events:none;opacity:0;';
+    document.body.appendChild(container);
+
+    parsed.querySelectorAll('body > div').forEach(page => {
+      container.appendChild(document.adoptNode(page));
+    });
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123] });
+    const pages = Array.from(container.children);
+
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await window.html2canvas(pages[i], {
+        scale: 2, useCORS: false,
+        width: 794, height: 1123,
+        windowWidth: 794, windowHeight: 1123,
+        scrollX: 0, scrollY: 0,
+      });
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 794, 1123);
+    }
+
+    document.body.removeChild(container);
+    pdf.save((data.projectName || 'protocol') + ' - סיכום פגישה ' + formatDateHe(data.date) + '.pdf');
+
+    if (btn) { btn.textContent = '✓ PDF הורד'; btn.disabled = false; }
+    setTimeout(() => { if (btn) btn.textContent = origText; }, 3000);
+  } catch (e) {
+    console.error('PDF error:', e);
+    if (btn) { btn.textContent = origText; btn.disabled = false; }
+    alert('שגיאה בייצור PDF: ' + (e.message || e));
+  }
+}
+
+function loadScript(src, globalName) {
+  return new Promise((resolve, reject) => {
+    if (window[globalName]) { resolve(window[globalName]); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve(window[globalName]);
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function toBase64(url) {
+  return fetch(url).then(r => r.blob()).then(blob => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(blob);
+  }));
+}
+
+function buildPdfHtml(data, bg1, bg2) {
+  const PAGE_W = 794, PAGE_H = 1123;
+  const TABLE_LEFT = 67.757309, TABLE_W = 643.454102, HEADER_ROW_H = 27.362671;
+  const COL_RESP = 95, COL_DATE = 95, COL_DESC = 407, COL_NUM = 46;
+
+  const P1_TABLE_TOP = 324.577484;
+  const P1_DATA_H = 663.196411 - HEADER_ROW_H;
+  const P1_MAX = 10, P1_ROW_H = P1_DATA_H / P1_MAX;
+
+  const P2_TABLE_TOP = 128;
+  const P2_DATA_H = 370 - HEADER_ROW_H;
+  const P2_MAX = 5, P2_ROW_H = P2_DATA_H / P2_MAX;
+
+  const formattedDate = formatDateHe(data.date);
+  const participants = (data.participants || []).join(', ');
+  const tasks = data.tasks || [];
+  const pageStyle = 'width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;position:relative;overflow:hidden;background:#fff;';
+  const bgStyle = 'position:absolute;top:0;left:0;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;z-index:0;';
+  const txtS = 'z-index:1;font-size:14px;font-family:Arial,sans-serif;';
+  const cellS = 'vertical-align:middle;padding:3px 4px;font-size:14px;font-family:Arial,sans-serif;background:white;border:1px solid #000;';
+
+  function th(w, label) {
+    return '<th style="width:' + w + 'px;border:1px solid #000;font-size:14px;font-family:Arial,sans-serif;font-weight:bold;text-align:center;vertical-align:middle;padding:2px 4px;background:white;">' + label + '</th>';
+  }
+
+  function makeRows(tArr, startIdx, rowH, maxRows) {
+    let html = '';
+    tArr.forEach((t, i) => {
+      html += '<tr style="height:' + rowH + 'px;">';
+      html += '<td style="width:' + COL_RESP + 'px;text-align:center;' + cellS + 'word-wrap:break-word;">' + escapeHtml(t.owner || '') + '</td>';
+      html += '<td style="width:' + COL_DATE + 'px;text-align:center;' + cellS + '">' + (t.date ? formatDateHe(t.date) : '') + '</td>';
+      html += '<td style="width:' + COL_DESC + 'px;text-align:right;padding:3px 8px;' + cellS + 'direction:rtl;word-wrap:break-word;">' + escapeHtml(t.desc || '') + '</td>';
+      html += '<td style="width:' + COL_NUM + 'px;text-align:center;' + cellS + '">' + (startIdx + i + 1) + '</td>';
+      html += '</tr>';
+    });
+    for (let i = 0; i < maxRows - tArr.length; i++) {
+      html += '<tr style="height:' + rowH + 'px;"><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td><td style="background:white;border:1px solid #000;"></td></tr>';
+    }
+    return html;
+  }
+
+  function makeTable(top, rows) {
+    return '<table style="position:absolute;top:' + top + 'px;left:' + TABLE_LEFT + 'px;width:' + TABLE_W + 'px;border-collapse:collapse;z-index:1;direction:ltr;"><thead><tr style="height:' + HEADER_ROW_H + 'px;">'
+      + th(COL_RESP, 'אחריות') + th(COL_DATE, 'לביצוע עד') + th(COL_DESC, 'הסיכום') + th(COL_NUM, "ס'פ")
+      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  const p1Tasks = tasks.slice(0, P1_MAX);
+  const p2Tasks = tasks.slice(P1_MAX, P1_MAX + P2_MAX);
+  const needsP2 = tasks.length > P1_MAX;
+
+  // Footer
+  const footerY = PAGE_H - 85;
+  const footer = '<div style="position:absolute;top:' + footerY + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
+    + '<div>רשם: ' + escapeHtml(data.recorder || '') + '</div>'
+    + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
+
+  // Page 1
+  let p1 = '<div style="' + pageStyle + '"><img style="' + bgStyle + '" src="' + bg1 + '" />';
+  p1 += '<span style="position:absolute;top:132.6px;left:66.5px;' + txtS + 'direction:ltr;">' + formattedDate + '</span>';
+  p1 += '<span style="position:absolute;top:165.6px;right:26px;' + txtS + 'direction:rtl;">לכבוד רשימת התפוצה</span>';
+  p1 += '<div style="position:absolute;top:199.9px;left:0;width:' + PAGE_W + 'px;text-align:center;' + txtS + 'direction:rtl;">הנדון – <strong><u>' + escapeHtml(data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate + '</u></strong></div>';
+  p1 += '<span style="position:absolute;top:234.5px;right:26px;' + txtS + 'direction:rtl;">משתתפים : ' + escapeHtml(participants) + '</span>';
+
+  let nextTop = 268.9;
+  if (data.location) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>'; nextTop += 25; }
+  if (data.phase) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>'; nextTop += 25; }
+  p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
+  p1 += makeTable(P1_TABLE_TOP, makeRows(p1Tasks, 0, P1_ROW_H, P1_MAX));
+  if (!needsP2) p1 += footer;
+  p1 += '</div>';
+
+  let p2 = '';
+  if (needsP2) {
+    p2 = '<div style="' + pageStyle + '"><img style="' + bgStyle + '" src="' + bg2 + '" />';
+    p2 += makeTable(P2_TABLE_TOP, makeRows(p2Tasks, P1_MAX, P2_ROW_H, P2_MAX));
+    p2 += footer + '</div>';
+  }
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;">' + p1 + p2 + '</body></html>';
 }
 
 async function sendToMonday() {
