@@ -272,7 +272,7 @@ function setRecState(state) {
       break;
     case 'recording':
       icon.textContent = '⏹';
-      label.textContent = 'מקליט... דבר עכשיו';
+      label.textContent = 'דבר עכשיו — ייעצר אוטומטית';
       live.style.display = 'block';
       result.style.display = 'none';
       document.getElementById('rec-transcript').textContent = 'מקשיב...';
