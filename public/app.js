@@ -846,30 +846,21 @@ function buildPdfHtml(data, bg1, bg2) {
       + '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
-  // === Calculate dynamic table top based on text above ===
-  var nextTop = 268.9;
-  var locationHtml = '', phaseHtml = '', summaryHtml = '', sikcumHtml = '';
-
+  // === FIXED positions matching the original PDF template (like chatbot) ===
+  // No dynamic calculations — every element at a known pixel position
+  var headerHtml = '';
   if (data.location) {
-    locationHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
-    nextTop += 24;
+    headerHtml += '<span style="position:absolute;top:262px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
   }
   if (data.phase) {
-    phaseHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>';
-    nextTop += 24;
+    headerHtml += '<span style="position:absolute;top:282px;right:26px;' + txtS + 'direction:rtl;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>';
   }
-  if (data.summary) {
-    var summaryLines = Math.ceil(data.summary.length / 50);
-    summaryHtml = '<div style="position:absolute;top:' + nextTop + 'px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.5;font-size:13px;">' + escapeHtml(data.summary) + '</div>';
-    nextTop += Math.max(24, summaryLines * 20);
-  }
-  sikcumHtml = '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
-  nextTop += 30;
+  headerHtml += '<span style="position:absolute;top:302px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
 
-  // Table starts after all text, but never before default position
-  var tableTop = Math.max(P1_TABLE_TOP_DEFAULT, nextTop);
+  // Table at fixed position (matching chatbot P1_TABLE_TOP)
+  var tableTop = P1_TABLE_TOP_DEFAULT;
 
-  // Calculate row height to fill available space (like chatbot)
+  // Row height to fill space between table top and footer area (like chatbot)
   var p1DataH = P1_TABLE_BOTTOM - tableTop - HEADER_ROW_H;
   var p1RowH = p1DataH / P1_MAX;
 
@@ -888,7 +879,7 @@ function buildPdfHtml(data, bg1, bg2) {
     + '<span style="position:absolute;top:165.6px;right:26px;' + txtS + 'direction:rtl;">לכבוד רשימת התפוצה</span>'
     + '<div style="position:absolute;top:199.9px;left:0;width:' + PAGE_W + 'px;text-align:center;' + txtS + 'direction:rtl;">הנדון – <strong><u>' + escapeHtml(data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate + '</u></strong></div>'
     + '<span style="position:absolute;top:234.5px;right:26px;' + txtS + 'direction:rtl;">משתתפים : ' + escapeHtml(participants) + '</span>'
-    + locationHtml + phaseHtml + summaryHtml + sikcumHtml
+    + headerHtml
     + makeTable(tableTop, makeRows(p1Tasks, 0, p1RowH, P1_MAX))
     + '</div>';
 
