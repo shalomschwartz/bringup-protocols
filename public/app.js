@@ -476,6 +476,13 @@ function toggleManualTask() {
   }
 }
 
+function cancelManualTask() {
+  manualOn = false;
+  document.getElementById('rec-form').style.display = 'none';
+  document.getElementById('task-desc').value = '';
+  document.getElementById('task-date').value = '';
+}
+
 function buildTaskOwnerDropdown() {
   const sel = document.getElementById('task-owner');
   sel.innerHTML = '';
