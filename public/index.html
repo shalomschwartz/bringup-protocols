@@ -143,20 +143,19 @@
       <div class="preview-row"><span class="pr-label">תאריך</span><span class="pr-val" id="preview-date"></span></div>
       <div class="preview-row"><span class="pr-label">מיקום</span><span class="pr-val" id="preview-location"></span></div>
       <div class="preview-row"><span class="pr-label">משתתפים</span><span class="pr-val" id="preview-participants"></span></div>
-      <div class="preview-row"><span class="pr-label">משימות</span><span class="pr-val" id="preview-tasks"></span></div>
     </div>
+    <!-- Tasks summary list -->
     <div style="direction:rtl;text-align:right;margin-bottom:12px;">
-      <div style="font-size:13px;color:#666;margin-bottom:6px;">תצוגה מקדימה של המסמך</div>
-      <button class="btn-secondary" onclick="openDocument()">
-        📄 צפה במסמך הפרוטוקול
-      </button>
+      <div class="section-title" style="margin-bottom:6px;">משימות (<span id="preview-task-count">0</span>)</div>
+      <div id="preview-tasks-list"></div>
     </div>
-    <div style="border-top:0.5px solid rgba(0,0,0,0.08);padding-top:12px;margin-bottom:10px;direction:rtl;text-align:right;">
-      <div style="font-size:13px;color:#666;margin-bottom:6px;">שליחה ל-Monday.com</div>
-    </div>
-    <div class="send-row">
-      <button class="btn-primary" id="send-monday-btn" onclick="sendToMonday()">
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button class="btn-primary" style="flex:1;margin-bottom:0;" id="send-monday-btn" onclick="sendToMonday()">
         <span id="send-monday-text">שלח ל Monday ↑</span>
+      </button>
+      <button class="btn-secondary" style="flex:0 0 auto;margin-bottom:0;padding:11px 14px;" onclick="downloadDocumentPDF()">
+        📥 הורד PDF
       </button>
     </div>
     <div id="send-status" style="display:none;direction:rtl;text-align:center;font-size:13px;padding:10px 0;"></div>

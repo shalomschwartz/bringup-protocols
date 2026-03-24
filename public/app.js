@@ -590,13 +590,65 @@ function buildPreview() {
   const selected = state.participants.filter(p => p.selected);
 
   document.getElementById('preview-title').textContent =
-    '\u05e4\u05e8\u05d5\u05d8\u05d5\u05e7\u05d5\u05dc \u05e4\u05d2\u05d9\u05e9\u05d4' + (proj ? ' \u2014 ' + proj.name : '');
+    'פרוטוקול פגישה' + (proj ? ' — ' + proj.name : '');
   document.getElementById('preview-date').textContent = date ? formatDateHe(date) : '';
   document.getElementById('preview-location').textContent = location || '';
   document.getElementById('preview-participants').textContent =
-    selected.map(p => p.name).join(', ') || '\u05dc\u05d0 \u05e0\u05d1\u05d7\u05e8\u05d5';
-  document.getElementById('preview-tasks').textContent =
-    state.tasks.length + ' \u05e4\u05e8\u05d9\u05d8\u05d9\u05dd \u2014 \u05d9\u05d5\u05e2\u05dc\u05d5 \u05db\u05e9\u05d5\u05e8\u05d5\u05ea \u05d7\u05d3\u05e9\u05d5\u05ea \u05d1-Monday';
+    selected.map(p => p.name).join(', ') || 'לא נבחרו';
+
+  // Build tasks summary list
+  document.getElementById('preview-task-count').textContent = state.tasks.length;
+  const tasksList = document.getElementById('preview-tasks-list');
+
+  if (state.tasks.length === 0) {
+    tasksList.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">אין משימות</div>';
+  } else {
+    tasksList.innerHTML = '';
+    state.tasks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'task-row';
+      row.style.marginBottom = '6px';
+      row.innerHTML = `
+        <div class="task-top">
+          <div class="task-text"><strong>${i + 1}.</strong> ${escapeHtml(t.desc)}</div>
+        </div>
+        <div class="task-meta">
+          ${t.date ? '<span class="task-date">' + formatDateHe(t.date) + '</span>' : ''}
+          ${t.owner ? '<span class="task-owner">' + escapeHtml(t.owner) + '</span>' : ''}
+        </div>
+      `;
+      tasksList.appendChild(row);
+    });
+  }
+
+  // Also store protocol data for PDF download
+  storeProtocolData();
+}
+
+function storeProtocolData() {
+  const proj = state.selectedProject;
+  const date = document.getElementById('meeting-date').value;
+  const location = document.getElementById('meeting-location').value;
+  const selected = state.participants.filter(p => p.selected);
+  const phase = proj?.columns?.portfolio_project_step?.text || '';
+  const recorder = selected.length > 0 ? selected[0].name : '';
+
+  const protocolData = {
+    projectName: proj ? proj.name : '',
+    date,
+    location,
+    participants: selected.map(p => p.name),
+    tasks: state.tasks.map(t => ({ desc: t.desc, owner: t.owner, date: t.date })),
+    phase,
+    recorder,
+  };
+  localStorage.setItem('bringup_protocol', JSON.stringify(protocolData));
+}
+
+function downloadDocumentPDF() {
+  storeProtocolData();
+  // Open document page in hidden iframe, trigger PDF download
+  window.open('document.html', '_blank');
 }
 
 async function sendToMonday() {
@@ -676,34 +728,7 @@ async function sendToMonday() {
 
 // ── Document Generation ──
 function openDocument() {
-  const proj = state.selectedProject;
-  const date = document.getElementById('meeting-date').value;
-  const location = document.getElementById('meeting-location').value;
-  const selected = state.participants.filter(p => p.selected);
-
-  const phase = proj?.columns?.portfolio_project_step?.text || '';
-
-  // Find who is the recorder (first admin-like participant, or first selected)
-  const recorder = selected.length > 0 ? selected[0].name : '';
-
-  const protocolData = {
-    projectName: proj ? proj.name : '',
-    date: date,
-    location: location,
-    participants: selected.map(p => p.name),
-    tasks: state.tasks.map(t => ({
-      desc: t.desc,
-      owner: t.owner,
-      date: t.date,
-    })),
-    phase: phase,
-    recorder: recorder,
-  };
-
-  // Store in localStorage for the document page to read
-  localStorage.setItem('bringup_protocol', JSON.stringify(protocolData));
-
-  // Open in new tab
+  storeProtocolData();
   window.open('document.html', '_blank');
 }
 
