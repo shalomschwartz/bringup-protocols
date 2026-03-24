@@ -130,6 +130,16 @@ body {
   text-align: right;
 }
 
+.p1-location {
+  position: absolute;
+  top: 269px;
+  right: 66px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+  text-align: right;
+}
+
 .p1-phase {
   position: absolute;
   top: 269px;
@@ -327,9 +337,10 @@ function buildPage1({ projectName, date, location, participants, tasks, phase, t
         הנדון – <u>${escapeHtml(projectName || '')} – סיכום פגישה שבועית מתאריך ${formattedDate}</u>
       </div>
       <div class="p1-participants">משתתפים : ${escapeHtml(participantNames)}</div>
-      ${phase ? '<div class="p1-phase">בשלב ביצוע הפגישה : ' + escapeHtml(phase) + '</div>' : ''}
-      <div class="p1-intro" ${phase ? '' : 'style="top:269px;"'}>להלן הסיכומים:-</div>
-      ${buildTaskTable(tasks, 1, phase ? 340 : 305)}
+      ${location ? '<div class="p1-location">מיקום הפגישה : ' + escapeHtml(location) + '</div>' : ''}
+      ${phase ? '<div class="p1-phase" style="top:' + (location ? '303' : '269') + 'px;">בשלב ביצוע הפגישה : ' + escapeHtml(phase) + '</div>' : ''}
+      <div class="p1-intro" style="top:${location && phase ? '337' : location || phase ? '303' : '269'}px;">להלן הסיכומים:-</div>
+      ${buildTaskTable(tasks, 1, (location && phase ? 370 : location || phase ? 340 : 305))}
       ${isLastPage ? buildFooter(recorder, participants) : ''}
     </div>
   `;
