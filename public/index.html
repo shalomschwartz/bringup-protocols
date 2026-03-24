@@ -101,16 +101,21 @@
 
   <!-- SCREEN 3: Tasks -->
   <div class="screen" id="screen3">
-    <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <button class="rec-btn" id="recbtn" onclick="toggleRec()" style="flex:1;margin-bottom:0;">
-        <div class="rec-pulse" id="rec-pulse"></div>
-        <span id="rectxt">🎙 הקלט משימה</span>
+    <!-- Recording area -->
+    <div id="rec-area" class="rec-area rec-idle">
+      <button class="rec-main-btn" id="recbtn" onclick="toggleRec()">
+        <div class="rec-icon" id="rec-icon">🎙</div>
+        <div class="rec-label" id="rec-label">לחץ להקלטת משימה</div>
       </button>
-      <button class="manual-btn" onclick="toggleManualTask()">
-        ✏️ הוסף ידנית
-      </button>
+      <div class="rec-live" id="rec-live" style="display:none;">
+        <div class="rec-waveform"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="rec-transcript" id="rec-transcript"></div>
+      </div>
+      <div class="rec-result" id="rec-result" style="display:none;"></div>
     </div>
-    <div class="rec-status" id="rec-status" style="display:none;"></div>
+    <button class="manual-btn" onclick="toggleManualTask()" style="margin-bottom:8px;">
+      ✏️ הוסף ידנית
+    </button>
     <div class="rec-form" id="rec-form">
       <div class="label">תיאור המשימה</div>
       <textarea class="input" id="task-desc" rows="2" style="resize:none;margin-bottom:8px;" placeholder="תאר את המשימה..."></textarea>

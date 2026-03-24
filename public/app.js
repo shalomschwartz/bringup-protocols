@@ -255,6 +255,43 @@ function toggleRec() {
   }
 }
 
+function setRecState(state) {
+  const area = document.getElementById('rec-area');
+  area.className = 'rec-area rec-' + state;
+  const icon = document.getElementById('rec-icon');
+  const label = document.getElementById('rec-label');
+  const live = document.getElementById('rec-live');
+  const result = document.getElementById('rec-result');
+
+  switch (state) {
+    case 'idle':
+      icon.textContent = '🎙';
+      label.textContent = 'לחץ להקלטת משימה';
+      live.style.display = 'none';
+      result.style.display = 'none';
+      break;
+    case 'recording':
+      icon.textContent = '⏹';
+      label.textContent = 'מקליט... לחץ לעצירה';
+      live.style.display = 'block';
+      result.style.display = 'none';
+      document.getElementById('rec-transcript').textContent = 'מקשיב...';
+      break;
+    case 'processing':
+      icon.textContent = '⏳';
+      label.textContent = 'מנתח את המשימה...';
+      live.style.display = 'none';
+      result.style.display = 'none';
+      break;
+    case 'done':
+      icon.textContent = '✅';
+      label.textContent = 'משימה נוספה!';
+      live.style.display = 'none';
+      result.style.display = 'block';
+      break;
+  }
+}
+
 function startRecording() {
   if (!SpeechRecognition) {
     alert('הדפדפן שלך לא תומך בהקלטה קולית.\nהשתמש ב-Chrome או Safari.');
@@ -266,17 +303,8 @@ function startRecording() {
   manualOn = false;
   fullTranscript = '';
 
-  const recBtn = document.getElementById('recbtn');
-  const recTxt = document.getElementById('rectxt');
-  const recStatus = document.getElementById('rec-status');
-
-  // Hide form during recording — only show live status
   document.getElementById('rec-form').style.display = 'none';
-
-  recBtn.classList.add('recording');
-  recTxt.textContent = '🔴 מקליט...';
-  recStatus.style.display = 'block';
-  recStatus.textContent = '🎙 מקשיב... דבר עכשיו';
+  setRecState('recording');
 
   recognition = new SpeechRecognition();
   recognition.lang = 'he-IL';
@@ -297,12 +325,11 @@ function startRecording() {
     }
 
     const currentText = (fullTranscript + interim).trim();
-    recStatus.textContent = '🎙 ' + (currentText.length > 60 ? '...' + currentText.slice(-60) : currentText);
+    document.getElementById('rec-transcript').textContent = currentText || 'מקשיב...';
 
     // Reset silence timer — user is still speaking
     clearTimeout(silenceTimer);
     silenceTimer = setTimeout(() => {
-      // User stopped speaking for 3 seconds — auto-stop
       if (recOn && fullTranscript.trim().length > 0) {
         stopRecording();
       }
@@ -313,8 +340,6 @@ function startRecording() {
     console.error('Speech recognition error:', event.error);
     if (event.error === 'not-allowed') {
       alert('לא ניתנה הרשאה למיקרופון.\nאנא אשר גישה למיקרופון בהגדרות הדפדפן.');
-    } else if (event.error === 'no-speech') {
-      recStatus.textContent = '🔇 לא זוהה דיבור, נסה שוב';
     }
     stopRecording();
   };
@@ -344,23 +369,13 @@ async function stopRecording() {
     recognition = null;
   }
 
-  const recBtn = document.getElementById('recbtn');
-  const recTxt = document.getElementById('rectxt');
-  const recStatus = document.getElementById('rec-status');
-
-  recBtn.classList.remove('recording');
-  recTxt.textContent = '🎙 הקלט משימה';
-
   const spokenText = fullTranscript.trim();
   if (!spokenText) {
-    recStatus.textContent = '🔇 לא זוהה טקסט';
-    setTimeout(() => { recStatus.style.display = 'none'; }, 2000);
+    setRecState('idle');
     return;
   }
 
-  // Parse with Claude AI and auto-add task — no form needed
-  recStatus.textContent = '⏳ מנתח משימה...';
-  recStatus.style.display = 'block';
+  setRecState('processing');
 
   try {
     const selectedParticipants = state.participants.filter(p => p.selected);
@@ -411,20 +426,23 @@ async function stopRecording() {
 
     renderTasks();
 
-    const summary = [];
-    if (ownerName) summary.push('אחריות: ' + ownerName);
-    if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
-    recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
-    recStatus.style.display = 'block';
-    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
+    // Show result card
+    const resultEl = document.getElementById('rec-result');
+    let resultHTML = '';
+    resultHTML += '<div class="result-row"><span class="result-label">תיאור:</span><span class="result-val">' + escapeHtml((parsed.description || spokenText).substring(0, 50)) + '</span></div>';
+    if (ownerName) resultHTML += '<div class="result-row"><span class="result-label">אחריות:</span><span class="result-val">' + escapeHtml(ownerName) + '</span></div>';
+    if (parsed.dueDate) resultHTML += '<div class="result-row"><span class="result-label">תאריך יעד:</span><span class="result-val">' + formatDateHe(parsed.dueDate) + '</span></div>';
+    resultEl.innerHTML = resultHTML;
+    setRecState('done');
+
+    // Reset to idle after 4 seconds
+    setTimeout(() => { setRecState('idle'); }, 4000);
   } catch (err) {
     // Last resort: add raw text as task
     console.error('Task parsing completely failed:', err);
     state.tasks.push({ desc: spokenText, owner: '', ownerId: '', date: '' });
     renderTasks();
-    recStatus.textContent = '⚠️ משימה נוספה — ערוך ידנית בלחיצה על ✏️';
-    recStatus.style.display = 'block';
-    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
+    setRecState('idle');
   }
 }
 
@@ -432,10 +450,7 @@ function resetRecordingUI() {
   recOn = false;
   manualOn = false;
   clearTimeout(silenceTimer);
-  const recBtn = document.getElementById('recbtn');
-  recBtn.classList.remove('recording');
-  document.getElementById('rectxt').textContent = '🎙 הקלט משימה';
-  document.getElementById('rec-status').style.display = 'none';
+  setRecState('idle');
   document.getElementById('rec-form').style.display = 'none';
 }
 
