@@ -665,7 +665,7 @@ function buildPreview() {
       row.className = 'confirm-task';
       row.innerHTML = `
         <span class="confirm-task-num">${i + 1}.</span>
-        <span class="confirm-task-desc">${escapeHtml(t.desc)}</span>
+        <span class="confirm-task-desc">${escapeHtml(cleanDescription(t.desc, t.owner))}</span>
         ${meta ? '<span class="confirm-task-meta">' + escapeHtml(meta) + '</span>' : ''}
       `;
       tasksList.appendChild(row);
@@ -826,7 +826,7 @@ function buildPdfHtml(data, bg1, bg2) {
       filled += '<tr style="height:' + rowH + 'px;">';
       filled += '<td style="' + tdStyle(COL_RESP) + 'word-wrap:break-word;">' + escapeHtml(t.owner || '') + '</td>';
       filled += '<td style="' + tdStyle(COL_DATE) + '">' + (t.date ? formatDateHe(t.date) : '') + '</td>';
-      filled += '<td style="' + tdStyle(COL_DESC, 'right') + 'padding:3px 8px;direction:rtl;word-wrap:break-word;">' + escapeHtml(t.desc || '') + '</td>';
+      filled += '<td style="' + tdStyle(COL_DESC, 'right') + 'padding:3px 8px;direction:rtl;word-wrap:break-word;">' + escapeHtml(cleanDescription(t.desc || '', t.owner || '')) + '</td>';
       filled += '<td style="' + tdStyle(COL_NUM) + '">' + (startIdx + i + 1) + '</td>';
       filled += '</tr>';
     });
