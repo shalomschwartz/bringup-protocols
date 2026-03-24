@@ -1,4 +1,4 @@
-const CLAUDE_API_KEY = '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';
+const CLAUDE_API_KEY = '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';
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
