@@ -20,7 +20,7 @@ body {
 
 /* Top bar */
 .topbar {
-  background: #1f8c5f;
+  background: #1a2744;
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@ body {
   position: relative;
   cursor: pointer;
 }
-.step.active { color: #1f8c5f; font-weight: 500; }
+.step.active { color: #1a2744; font-weight: 500; }
 .step-dot {
   width: 18px; height: 18px;
   border-radius: 50%;
@@ -63,14 +63,14 @@ body {
   color: #888;
 }
 .step.active .step-dot {
-  background: #1f8c5f;
-  border-color: #1f8c5f;
+  background: #1a2744;
+  border-color: #1a2744;
   color: #fff;
 }
 .step.done .step-dot {
-  background: #e1f5ee;
-  border-color: #1f8c5f;
-  color: #1f8c5f;
+  background: #e0e6f0;
+  border-color: #1a2744;
+  color: #1a2744;
 }
 
 /* Screens */
@@ -86,8 +86,8 @@ body {
 .loading.active { display: block; }
 .spinner {
   width: 32px; height: 32px;
-  border: 3px solid #e1f5ee;
-  border-top-color: #1f8c5f;
+  border: 3px solid #e0e6f0;
+  border-top-color: #1a2744;
   border-radius: 50%;
   margin: 0 auto;
   animation: spin 0.8s linear infinite;
@@ -116,7 +116,7 @@ body {
   outline: none;
   font-family: inherit;
 }
-.input:focus { border-color: #1f8c5f; }
+.input:focus { border-color: #1a2744; }
 .select {
   width: 100%;
   border: 0.5px solid rgba(0,0,0,0.2);
@@ -149,8 +149,8 @@ body {
   padding: 2px 8px;
   border-radius: 20px;
   font-size: 11px;
-  background: #e1f5ee;
-  color: #0f6e56;
+  background: #e0e6f0;
+  color: #1a2744;
   font-weight: 500;
   margin-top: 6px;
 }
@@ -194,7 +194,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 500; flex-shrink: 0;
 }
-.av-g { background: #e1f5ee; color: #0f6e56; }
+.av-g { background: #e0e6f0; color: #1a2744; }
 .av-b { background: #e6f1fb; color: #185fa5; }
 .av-o { background: #faeeda; color: #854f0b; }
 .av-p { background: #f3e8ff; color: #6b21a8; }
@@ -203,8 +203,8 @@ body {
 .chk {
   width: 18px; height: 18px;
   border-radius: 4px;
-  border: 1.5px solid #1f8c5f;
-  background: #1f8c5f;
+  border: 1.5px solid #1a2744;
+  background: #1a2744;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
@@ -221,7 +221,7 @@ body {
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 13px;
-  color: #1f8c5f;
+  color: #1a2744;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -279,7 +279,7 @@ body {
 .task-remove:hover { color: #e24b4a; }
 .task-edit-btn {
   font-size: 14px;
-  color: #1f8c5f;
+  color: #1a2744;
   cursor: pointer;
   background: none;
   border: none;
@@ -302,7 +302,7 @@ body {
 
 .rec-main-btn {
   width: 100%;
-  background: #1f8c5f;
+  background: #1a2744;
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -382,9 +382,9 @@ body {
 .manual-btn {
   width: 100%;
   background: #fff;
-  border: 1.5px solid #1f8c5f;
+  border: 1.5px solid #1a2744;
   border-radius: 8px;
-  color: #1f8c5f;
+  color: #1a2744;
   padding: 11px;
   font-size: 14px;
   cursor: pointer;
@@ -445,7 +445,7 @@ body {
 .confirm-label { color: #999; font-size: 12px; flex-shrink: 0; }
 .confirm-val { color: #1a1a1a; font-weight: 500; text-align: left; }
 .confirm-count {
-  background: #1f8c5f;
+  background: #1a2744;
   color: #fff;
   width: 22px; height: 22px;
   border-radius: 50%;
@@ -473,7 +473,7 @@ body {
   align-items: baseline;
 }
 .confirm-task:last-child { border-bottom: none; }
-.confirm-task-num { color: #1f8c5f; font-weight: 600; flex-shrink: 0; }
+.confirm-task-num { color: #1a2744; font-weight: 600; flex-shrink: 0; }
 .confirm-task-desc { flex: 1; }
 .confirm-task-meta { color: #999; font-size: 11px; flex-shrink: 0; }
 
@@ -494,7 +494,7 @@ body {
   transition: all 0.2s ease;
 }
 .action-btn:active { transform: scale(0.98); }
-.action-monday { background: #1f8c5f; color: #fff; }
+.action-monday { background: #1a2744; color: #fff; }
 .action-monday:hover { background: #17764e; }
 .action-pdf { background: #f5f5f3; color: #1a1a1a; border: 1px solid rgba(0,0,0,0.1); }
 .action-pdf:hover { background: #eeedeb; }
@@ -507,7 +507,7 @@ body {
 /* Buttons */
 .btn-primary {
   width: 100%;
-  background: #1f8c5f;
+  background: #1a2744;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -557,7 +557,7 @@ body {
   font-family: inherit;
 }
 .btn-next {
-  background: #1f8c5f;
+  background: #1a2744;
   color: #fff;
   border: none;
   font-weight: 500;
@@ -584,8 +584,8 @@ body {
 
 /* Success state */
 .success-msg {
-  background: #e1f5ee;
-  color: #0f6e56;
+  background: #e0e6f0;
+  color: #1a2744;
   border-radius: 8px;
   padding: 12px;
   text-align: center;
