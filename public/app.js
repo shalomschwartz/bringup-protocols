@@ -779,18 +779,40 @@ function localParseTask(text, participantNames, meetingDate) {
     }
   }
 
-  // Extract date: "עד ה-DD ל-MM" or "עד DD/MM" or "עד DD.MM"
+  // Extract date
   const refDate = meetingDate ? new Date(meetingDate) : new Date();
   const refYear = refDate.getFullYear();
 
-  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 or עד 23 ל-12
-  const dateMatch1 = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
-  if (dateMatch1) {
-    const day = dateMatch1[1].padStart(2, '0');
-    const month = dateMatch1[2].padStart(2, '0');
-    let year = dateMatch1[3] ? (dateMatch1[3].length === 2 ? '20' + dateMatch1[3] : dateMatch1[3]) : String(refYear);
-    result.dueDate = year + '-' + month + '-' + day;
-    result.description = result.description.replace(dateMatch1[0], '').trim();
+  // Hebrew month names to numbers
+  const hebrewMonths = {
+    'ינואר': '01', 'פברואר': '02', 'מרץ': '03', 'מרס': '03', 'אפריל': '04',
+    'מאי': '05', 'יוני': '06', 'יולי': '07', 'אוגוסט': '08',
+    'ספטמבר': '09', 'אוקטובר': '10', 'נובמבר': '11', 'דצמבר': '12',
+  };
+
+  // Pattern: עד ה-25 למרץ 2026 or עד 25 למרס
+  const hebrewMonthPattern = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל|של\s+)?(\S+?)(?:\s+(\d{2,4}))?(?:\s|$|,|\.)/);
+  if (hebrewMonthPattern) {
+    const day = hebrewMonthPattern[1].padStart(2, '0');
+    const monthWord = hebrewMonthPattern[2].replace(/^ל/, '');
+    const monthNum = hebrewMonths[monthWord];
+    if (monthNum) {
+      let year = hebrewMonthPattern[3] ? (hebrewMonthPattern[3].length === 2 ? '20' + hebrewMonthPattern[3] : hebrewMonthPattern[3]) : String(refYear);
+      result.dueDate = year + '-' + monthNum + '-' + day;
+      result.description = result.description.replace(hebrewMonthPattern[0], ' ').trim();
+    }
+  }
+
+  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 (numeric month)
+  if (!result.dueDate) {
+    const dateMatch1 = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+    if (dateMatch1) {
+      const day = dateMatch1[1].padStart(2, '0');
+      const month = dateMatch1[2].padStart(2, '0');
+      let year = dateMatch1[3] ? (dateMatch1[3].length === 2 ? '20' + dateMatch1[3] : dateMatch1[3]) : String(refYear);
+      result.dueDate = year + '-' + month + '-' + day;
+      result.description = result.description.replace(dateMatch1[0], '').trim();
+    }
   }
 
   // Pattern: עד DD/MM/YYYY or DD.MM.YYYY
