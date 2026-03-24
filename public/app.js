@@ -362,60 +362,70 @@ async function stopRecording() {
   recStatus.textContent = '⏳ מנתח משימה...';
   recStatus.style.display = 'block';
 
-  const selectedParticipants = state.participants.filter(p => p.selected);
-  const participantNames = selectedParticipants.map(p => p.name);
-  const meetingDate = document.getElementById('meeting-date').value;
-
-  let parsed = null;
-
-  // Try AI parsing first
   try {
-    const res = await fetch('/api/parse-task', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: spokenText, participants: participantNames, meetingDate }),
+    const selectedParticipants = state.participants.filter(p => p.selected);
+    const participantNames = selectedParticipants.map(p => p.name);
+    const meetingDate = document.getElementById('meeting-date').value;
+
+    let parsed = null;
+
+    // Try AI parsing first
+    try {
+      const res = await fetch('/api/parse-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: spokenText, participants: participantNames, meetingDate }),
+      });
+      const data = await res.json();
+      if (!data.error && data.description) {
+        parsed = data;
+      }
+    } catch (err) {
+      console.error('AI parse failed, using local fallback:', err);
+    }
+
+    // Fallback: local text parsing if AI failed
+    if (!parsed) {
+      parsed = localParseTask(spokenText, participantNames, meetingDate);
+    }
+
+    // Find the matching participant to get their Monday user ID
+    const ownerName = parsed.owner || '';
+    let ownerId = '';
+    if (ownerName) {
+      const matchedParticipant = selectedParticipants.find(p =>
+        p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
+      );
+      if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
+        ownerId = matchedParticipant.id.replace('user-', '');
+      }
+    }
+
+    // Auto-add the task directly — zero keyboard interaction
+    state.tasks.push({
+      desc: parsed.description || spokenText,
+      owner: ownerName,
+      ownerId: ownerId,
+      date: parsed.dueDate || '',
     });
-    const data = await res.json();
-    if (!data.error && data.description) {
-      parsed = data;
-    }
+
+    renderTasks();
+
+    const summary = [];
+    if (ownerName) summary.push('אחריות: ' + ownerName);
+    if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
+    recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
+    recStatus.style.display = 'block';
+    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
   } catch (err) {
-    console.error('AI parse failed, using local fallback:', err);
+    // Last resort: add raw text as task
+    console.error('Task parsing completely failed:', err);
+    state.tasks.push({ desc: spokenText, owner: '', ownerId: '', date: '' });
+    renderTasks();
+    recStatus.textContent = '⚠️ משימה נוספה — ערוך ידנית בלחיצה על ✏️';
+    recStatus.style.display = 'block';
+    setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
   }
-
-  // Fallback: local text parsing if AI failed
-  if (!parsed) {
-    parsed = localParseTask(spokenText, participantNames, meetingDate);
-  }
-
-  // Find the matching participant to get their Monday user ID
-  const ownerName = parsed.owner || '';
-  let ownerId = '';
-  if (ownerName) {
-    const matchedParticipant = selectedParticipants.find(p =>
-      p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
-    );
-    if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
-      ownerId = matchedParticipant.id.replace('user-', '');
-    }
-  }
-
-  // Auto-add the task directly — zero keyboard interaction
-  state.tasks.push({
-    desc: parsed.description || spokenText,
-    owner: ownerName,
-    ownerId: ownerId,
-    date: parsed.dueDate || '',
-  });
-
-  renderTasks();
-
-  const summary = [];
-  if (ownerName) summary.push('אחריות: ' + ownerName);
-  if (parsed.dueDate) summary.push('עד: ' + formatDateHe(parsed.dueDate));
-  recStatus.textContent = '✅ משימה נוספה' + (summary.length ? ' (' + summary.join(', ') + ')' : '');
-  recStatus.style.display = 'block';
-  setTimeout(() => { recStatus.style.display = 'none'; }, 4000);
 }
 
 function resetRecordingUI() {
@@ -773,8 +783,8 @@ function localParseTask(text, participantNames, meetingDate) {
   const refDate = meetingDate ? new Date(meetingDate) : new Date();
   const refYear = refDate.getFullYear();
 
-  // Pattern: עד ה-23 ל-12 or עד 23 ל-12
-  const dateMatch1 = text.match(/עד\s+(?:ה-?)?(\d{1,2})\s+(?:ל-?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+  // Pattern: עד ה-23 ל-12 or עד ה 23 ל 12 or עד 23 ל-12
+  const dateMatch1 = text.match(/עד\s+(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
   if (dateMatch1) {
     const day = dateMatch1[1].padStart(2, '0');
     const month = dateMatch1[2].padStart(2, '0');
