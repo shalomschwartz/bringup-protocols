@@ -370,17 +370,16 @@ function downloadPDF() {
     pagebreak: { mode: ['css'], before: '.page' },
   };
 
-  const btn = event.target;
-  const origText = btn.textContent;
-  btn.textContent = '⏳ מייצר PDF...';
-  btn.disabled = true;
+  // Update button if it exists (won't exist in auto-download mode)
+  const toolbar = document.querySelector('.toolbar');
+  const btn = toolbar ? toolbar.querySelector('button') : null;
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ מייצר PDF...'; btn.disabled = true; }
 
   html2pdf().set(opt).from(pages).save().then(() => {
-    btn.textContent = origText;
-    btn.disabled = false;
+    if (btn) { btn.textContent = origText; btn.disabled = false; }
   }).catch(() => {
-    btn.textContent = origText;
-    btn.disabled = false;
+    if (btn) { btn.textContent = origText; btn.disabled = false; }
     alert('שגיאה בייצור PDF. נסה שוב.');
   });
 }

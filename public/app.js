@@ -726,12 +726,6 @@ async function sendToMonday() {
   }
 }
 
-// ── Document Generation ──
-function openDocument() {
-  storeProtocolData();
-  window.open('document.html', '_blank');
-}
-
 // ── Helpers ──
 function formatDateHe(dateStr) {
   if (!dateStr) return '';
