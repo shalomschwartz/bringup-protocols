@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>פרוטוקול פגישה — BringUp</title>
+<style>
+@media print {
+  .noprint { display: none !important; }
+  body { margin: 0; padding: 0; }
+  .page { break-after: page; margin: 0; box-shadow: none; }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Arial, 'Segoe UI', sans-serif;
+  background: #888;
+  direction: rtl;
+}
+
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #1f8c5f;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.toolbar-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.toolbar button {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.toolbar button:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.pages {
+  padding-top: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+.page {
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.page-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.page-content {
+  position: relative;
+  z-index: 1;
+  padding: 0;
+}
+
+/* ── Page 1 layout matching the original template ── */
+.p1-date {
+  position: absolute;
+  top: 133px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+}
+
+.p1-to {
+  position: absolute;
+  top: 166px;
+  right: 66px;
+  font-size: 14px;
+  color: #000;
+}
+
+.p1-subject {
+  position: absolute;
+  top: 200px;
+  right: 66px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+  text-align: right;
+}
+
+.p1-subject u {
+  font-weight: bold;
+}
+
+.p1-participants {
+  position: absolute;
+  top: 235px;
+  right: 66px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+  text-align: right;
+}
+
+.p1-phase {
+  position: absolute;
+  top: 269px;
+  right: 66px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+  text-align: right;
+}
+
+.p1-intro {
+  position: absolute;
+  top: 305px;
+  right: 66px;
+  left: 66px;
+  font-size: 14px;
+  color: #000;
+  text-align: right;
+}
+
+/* Task table */
+.task-table {
+  position: absolute;
+  top: 340px;
+  right: 50px;
+  left: 50px;
+  font-size: 12px;
+  border-collapse: collapse;
+  direction: rtl;
+  width: calc(100% - 100px);
+}
+
+.task-table th {
+  background: #e8e8e8;
+  border: 1px solid #999;
+  padding: 6px 8px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 12px;
+  color: #000;
+}
+
+.task-table td {
+  border: 1px solid #999;
+  padding: 5px 8px;
+  vertical-align: top;
+  font-size: 12px;
+  color: #000;
+  line-height: 1.5;
+}
+
+.task-table .col-num { width: 35px; text-align: center; }
+.task-table .col-summary { }
+.task-table .col-owner { width: 100px; text-align: center; }
+.task-table .col-date { width: 80px; text-align: center; }
+
+/* Footer section */
+.p-footer {
+  position: absolute;
+  bottom: 80px;
+  right: 66px;
+  left: 66px;
+  font-size: 13px;
+  color: #000;
+  line-height: 1.8;
+}
+
+/* ── Page 2+ (continuation) ── */
+.p2-tasks {
+  position: absolute;
+  top: 130px;
+  right: 50px;
+  left: 50px;
+  font-size: 12px;
+}
+
+.p2-footer {
+  position: absolute;
+  bottom: 80px;
+  right: 66px;
+  left: 66px;
+  font-size: 13px;
+  color: #000;
+  line-height: 1.8;
+}
+
+/* Error state */
+.error-state {
+  text-align: center;
+  padding: 100px 20px;
+  color: #666;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar noprint">
+  <div class="toolbar-title" id="toolbar-title">פרוטוקול פגישה — BringUp</div>
+  <button onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+  <button onclick="window.close()">✕ סגור</button>
+</div>
+
+<div class="pages" id="pages">
+  <div class="error-state" id="error-state" style="display:none;">
+    <p>❌ לא נמצאו נתוני פרוטוקול</p>
+    <p style="font-size:13px;margin-top:8px;">חזור לאפליקציה ולחץ "צפה במסמך"</p>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Read protocol data from localStorage
+  const raw = localStorage.getItem('bringup_protocol');
+  if (!raw) {
+    document.getElementById('error-state').style.display = 'block';
+    return;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    document.getElementById('error-state').style.display = 'block';
+    return;
+  }
+
+  const { projectName, date, location, participants, tasks, phase, recorder } = data;
+
+  document.getElementById('toolbar-title').textContent =
+    'פרוטוקול פגישה — ' + (projectName || 'BringUp');
+
+  document.title = (projectName || '') + ' — פרוטוקול פגישה ' + formatDate(date);
+
+  // Calculate how many tasks fit per page
+  const TASKS_PER_PAGE1 = 12; // Page 1 has header info, less room
+  const TASKS_PER_PAGE2 = 22; // Continuation pages have more room
+
+  const pages = [];
+
+  // ── Page 1 ──
+  const page1Tasks = tasks.slice(0, TASKS_PER_PAGE1);
+  const page1 = buildPage1({
+    projectName,
+    date,
+    location,
+    participants,
+    tasks: page1Tasks,
+    phase,
+    totalTasks: tasks.length,
+    isLastPage: tasks.length <= TASKS_PER_PAGE1,
+    recorder,
+  });
+  pages.push(page1);
+
+  // ── Additional pages if needed ──
+  let remaining = tasks.slice(TASKS_PER_PAGE1);
+  let pageNum = 2;
+  while (remaining.length > 0) {
+    const pageTasks = remaining.slice(0, TASKS_PER_PAGE2);
+    remaining = remaining.slice(TASKS_PER_PAGE2);
+    const isLast = remaining.length === 0;
+
+    const page = buildContinuationPage({
+      tasks: pageTasks,
+      startNum: TASKS_PER_PAGE1 + (pageNum - 2) * TASKS_PER_PAGE2 + 1,
+      pageNum,
+      isLastPage: isLast,
+      projectName,
+      recorder,
+      participants,
+    });
+    pages.push(page);
+    pageNum++;
+  }
+
+  // Render pages
+  const container = document.getElementById('pages');
+  pages.forEach(p => container.appendChild(p));
+});
+
+function buildPage1({ projectName, date, location, participants, tasks, phase, totalTasks, isLastPage, recorder }) {
+  const page = document.createElement('div');
+  page.className = 'page';
+
+  const formattedDate = formatDate(date);
+  const participantNames = (participants || []).join(', ');
+
+  page.innerHTML = `
+    <img class="page-bg" src="bgimg/bg00001.jpg" alt="" />
+    <div class="page-content">
+      <div class="p1-date">${formattedDate}</div>
+      <div class="p1-to">לכבוד רשימת התפוצה</div>
+      <div class="p1-subject">
+        הנדון – <u>${escapeHtml(projectName || '')} – סיכום פגישה שבועית מתאריך ${formattedDate}</u>
+      </div>
+      <div class="p1-participants">משתתפים : ${escapeHtml(participantNames)}</div>
+      ${phase ? '<div class="p1-phase">בשלב ביצוע הפגישה : ' + escapeHtml(phase) + '</div>' : ''}
+      <div class="p1-intro" ${phase ? '' : 'style="top:269px;"'}>להלן הסיכומים:-</div>
+      ${buildTaskTable(tasks, 1, phase ? 340 : 305)}
+      ${isLastPage ? buildFooter(recorder, participants) : ''}
+    </div>
+  `;
+  return page;
+}
+
+function buildContinuationPage({ tasks, startNum, pageNum, isLastPage, projectName, recorder, participants }) {
+  const page = document.createElement('div');
+  page.className = 'page';
+
+  page.innerHTML = `
+    <img class="page-bg" src="bgimg/bg00002.jpg" alt="" />
+    <div class="page-content">
+      <div class="p2-tasks">
+        ${buildTaskTableHTML(tasks, startNum)}
+      </div>
+      ${isLastPage ? buildFooter(recorder, participants, true) : ''}
+    </div>
+  `;
+  return page;
+}
+
+function buildTaskTable(tasks, startNum, topPos) {
+  if (!tasks || tasks.length === 0) return '';
+  return `
+    <table class="task-table" style="top:${topPos}px;">
+      <thead>
+        <tr>
+          <th class="col-num">ספ'</th>
+          <th class="col-summary">הסיכום</th>
+          <th class="col-owner">אחריות</th>
+          <th class="col-date">לביצוע עד</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tasks.map((t, i) => `
+          <tr>
+            <td class="col-num">.${startNum + i}</td>
+            <td class="col-summary">${escapeHtml(t.desc || t.name || '')}</td>
+            <td class="col-owner">${escapeHtml(t.owner || '')}</td>
+            <td class="col-date">${t.date ? formatDate(t.date) : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function buildTaskTableHTML(tasks, startNum) {
+  return `
+    <table class="task-table" style="position:static;width:100%;">
+      <thead>
+        <tr>
+          <th class="col-num">ספ'</th>
+          <th class="col-summary">הסיכום</th>
+          <th class="col-owner">אחריות</th>
+          <th class="col-date">לביצוע עד</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tasks.map((t, i) => `
+          <tr>
+            <td class="col-num">.${startNum + i}</td>
+            <td class="col-summary">${escapeHtml(t.desc || t.name || '')}</td>
+            <td class="col-owner">${escapeHtml(t.owner || '')}</td>
+            <td class="col-date">${t.date ? formatDate(t.date) : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function buildFooter(recorder, participants, isPage2) {
+  const cls = isPage2 ? 'p2-footer' : 'p-footer';
+  const names = (participants || []).join(', ');
+  return `
+    <div class="${cls}">
+      <div>רשם: ${escapeHtml(recorder || '')}</div>
+      <div>תפוצה : משתתפי הפגישה${names ? ', ' + escapeHtml(names) : ''}</div>
+    </div>
+  `;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return parts[2] + '.' + parts[1] + '.' + parts[0];
+  }
+  return dateStr;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

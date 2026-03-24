@@ -577,6 +577,39 @@ async function sendToMonday() {
   }
 }
 
+// ── Document Generation ──
+function openDocument() {
+  const proj = state.selectedProject;
+  const date = document.getElementById('meeting-date').value;
+  const location = document.getElementById('meeting-location').value;
+  const selected = state.participants.filter(p => p.selected);
+
+  const phase = proj?.columns?.portfolio_project_step?.text || '';
+
+  // Find who is the recorder (first admin-like participant, or first selected)
+  const recorder = selected.length > 0 ? selected[0].name : '';
+
+  const protocolData = {
+    projectName: proj ? proj.name : '',
+    date: date,
+    location: location,
+    participants: selected.map(p => p.name),
+    tasks: state.tasks.map(t => ({
+      desc: t.desc,
+      owner: t.owner,
+      date: t.date,
+    })),
+    phase: phase,
+    recorder: recorder,
+  };
+
+  // Store in localStorage for the document page to read
+  localStorage.setItem('bringup_protocol', JSON.stringify(protocolData));
+
+  // Open in new tab
+  window.open('document.html', '_blank');
+}
+
 // ── Helpers ──
 function formatDateHe(dateStr) {
   if (!dateStr) return '';
