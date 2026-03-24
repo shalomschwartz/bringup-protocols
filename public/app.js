@@ -935,7 +935,7 @@ async function sendToMonday() {
     let taskIds = [];
     if (state.tasks.length > 0) {
       const tasksPayload = state.tasks.map(t => ({
-        name: t.desc + (t.owner ? ' [אחריות: ' + t.owner + ']' : ''),
+        name: cleanDescription(t.desc, t.owner),
         owner: t.owner,
         ownerId: t.ownerId,
         date: t.date,
