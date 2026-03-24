@@ -635,26 +635,22 @@ function buildPreview() {
   document.getElementById('preview-participants').textContent =
     selected.map(p => p.name).join(', ') || 'לא נבחרו';
 
-  // Build tasks summary list
+  // Build compact tasks summary
   document.getElementById('preview-task-count').textContent = state.tasks.length;
   const tasksList = document.getElementById('preview-tasks-list');
 
   if (state.tasks.length === 0) {
-    tasksList.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">אין משימות</div>';
+    tasksList.innerHTML = '<div style="text-align:center;color:#999;font-size:12px;padding:6px 0;">אין משימות</div>';
   } else {
     tasksList.innerHTML = '';
     state.tasks.forEach((t, i) => {
+      const meta = [t.owner, t.date ? formatDateHe(t.date) : ''].filter(Boolean).join(' · ');
       const row = document.createElement('div');
-      row.className = 'task-row';
-      row.style.marginBottom = '6px';
+      row.className = 'confirm-task';
       row.innerHTML = `
-        <div class="task-top">
-          <div class="task-text"><strong>${i + 1}.</strong> ${escapeHtml(t.desc)}</div>
-        </div>
-        <div class="task-meta">
-          ${t.date ? '<span class="task-date">' + formatDateHe(t.date) + '</span>' : ''}
-          ${t.owner ? '<span class="task-owner">' + escapeHtml(t.owner) + '</span>' : ''}
-        </div>
+        <span class="confirm-task-num">${i + 1}.</span>
+        <span class="confirm-task-desc">${escapeHtml(t.desc)}</span>
+        ${meta ? '<span class="confirm-task-meta">' + escapeHtml(meta) + '</span>' : ''}
       `;
       tasksList.appendChild(row);
     });
@@ -833,7 +829,8 @@ function buildPdfHtml(data, bg1, bg2) {
   if (data.location) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>'; nextTop += 25; }
   if (data.phase) { p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;max-width:600px;">בשלב ביצוע הפגישה : ' + escapeHtml(data.phase) + '</span>'; nextTop += 25; }
   p1 += '<span style="position:absolute;top:' + nextTop + 'px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
-  p1 += makeTable(P1_TABLE_TOP, makeRows(p1Tasks, 0, P1_ROW_H, P1_MAX));
+  const dynamicTableTop = Math.max(P1_TABLE_TOP, nextTop + 30);
+  p1 += makeTable(dynamicTableTop, makeRows(p1Tasks, 0, P1_ROW_H, P1_MAX));
   if (!needsP2) p1 += footer;
   p1 += '</div>';
 
