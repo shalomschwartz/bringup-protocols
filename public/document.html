@@ -237,9 +237,12 @@ body {
 </head>
 <body>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <div class="toolbar noprint">
   <div class="toolbar-title" id="toolbar-title">פרוטוקול פגישה — BringUp</div>
-  <button onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+  <button onclick="downloadPDF()">📥 הורד PDF</button>
+  <button onclick="window.print()">🖨️ הדפס</button>
   <button onclick="window.close()">✕ סגור</button>
 </div>
 
@@ -438,6 +441,36 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
+}
+
+function downloadPDF() {
+  const pages = document.getElementById('pages');
+  const filename = document.title.replace(/[^\u0590-\u05FFa-zA-Z0-9 _-]/g, '').trim() || 'protocol';
+
+  const opt = {
+    margin: 0,
+    filename: filename + '.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+    jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'], before: '.page' },
+  };
+
+  // Show generating indicator
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ מייצר PDF...';
+  btn.disabled = true;
+
+  html2pdf().set(opt).from(pages).save().then(() => {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }).catch(() => {
+    btn.textContent = origText;
+    btn.disabled = false;
+    // Fallback to print dialog
+    window.print();
+  });
 }
 </script>
 </body>
