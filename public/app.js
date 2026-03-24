@@ -521,7 +521,7 @@ async function sendToMonday() {
   const textEl = document.getElementById('send-monday-text');
 
   btn.disabled = true;
-  textEl.textContent = '\u05e9\u05d5\u05dc\u05d7...';
+  textEl.textContent = 'שולח...';
   statusEl.style.display = 'none';
 
   try {
@@ -530,24 +530,14 @@ async function sendToMonday() {
     const location = document.getElementById('meeting-location').value;
     const selected = state.participants.filter(p => p.selected);
 
-    const protocolName = '\u05e4\u05e8\u05d5\u05d8\u05d5\u05e7\u05d5\u05dc' + (proj ? ' \u2014 ' + proj.name : '') + ' \u2014 ' + formatDateHe(date);
-    const description = [
-      '\u05de\u05d9\u05e7\u05d5\u05dd: ' + (location || '\u05dc\u05d0 \u05e6\u05d5\u05d9\u05df'),
-      '\u05de\u05e9\u05ea\u05ea\u05e4\u05d9\u05dd: ' + selected.map(p => p.name).join(', '),
-      '\u05de\u05e9\u05d9\u05de\u05d5\u05ea: ' + state.tasks.length,
-    ].join('\n');
+    const protocolName = 'פרוטוקול' + (proj ? ' — ' + proj.name : '') + ' — ' + formatDateHe(date);
 
-    // 1. Create protocol item
-    const protocolRes = await fetch('/api/protocol', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: protocolName, description, date }),
-    });
-    const protocol = await protocolRes.json();
+    // Find recorder's Monday user ID
+    const recorder = selected.length > 0 ? selected[0] : null;
+    const recorderId = recorder && recorder.id.startsWith('user-') ? recorder.id.replace('user-', '') : '';
 
-    if (protocol.error) throw new Error(JSON.stringify(protocol.error));
-
-    // 2. Create tasks on task board linked to the project
+    // 1. Create tasks first to get their IDs
+    let taskIds = [];
     if (state.tasks.length > 0) {
       const tasksPayload = state.tasks.map(t => ({
         name: t.desc + (t.owner ? ' [אחריות: ' + t.owner + ']' : ''),
@@ -556,24 +546,47 @@ async function sendToMonday() {
         date: t.date,
       }));
 
-      await fetch('/api/tasks', {
+      const tasksRes = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: proj?.id, tasks: tasksPayload }),
       });
+      const tasksResult = await tasksRes.json();
+
+      // Collect created task IDs
+      taskIds = tasksResult
+        .filter(r => r && r.id)
+        .map(r => r.id);
     }
 
+    // 2. Create protocol item on board 1718595738 with links to project and tasks
+    const protocolRes = await fetch('/api/protocol', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: protocolName,
+        date,
+        location,
+        projectId: proj?.id || '',
+        recorderId,
+        taskIds,
+      }),
+    });
+    const protocol = await protocolRes.json();
+
+    if (protocol.error) throw new Error(JSON.stringify(protocol.error));
+
     statusEl.className = 'success-msg';
-    statusEl.textContent = '\u2705 \u05d4\u05e4\u05e8\u05d5\u05d8\u05d5\u05e7\u05d5\u05dc \u05e0\u05d5\u05e6\u05e8 \u05d1\u05d4\u05e6\u05dc\u05d7\u05d4 \u05d1-Monday.com!';
+    statusEl.textContent = '✅ הפרוטוקול נוצר בהצלחה ב-Monday.com!';
     statusEl.style.display = 'block';
-    textEl.textContent = '\u2713 \u05e0\u05e9\u05dc\u05d7 \u05d1\u05d4\u05e6\u05dc\u05d7\u05d4';
+    textEl.textContent = '✓ נשלח בהצלחה';
   } catch (err) {
     console.error('Send error:', err);
     statusEl.className = 'error-msg';
-    statusEl.textContent = '\u274c \u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05e9\u05dc\u05d9\u05d7\u05d4. \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1.';
+    statusEl.textContent = '❌ שגיאה בשליחה. נסה שוב.';
     statusEl.style.display = 'block';
     btn.disabled = false;
-    textEl.textContent = 'Monday \u2191 \u05e9\u05dc\u05d7 \u05dc';
+    textEl.textContent = 'שלח ל Monday ↑';
   }
 }
 

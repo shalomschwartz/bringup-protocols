@@ -10,8 +10,9 @@ const MONDAY_API = 'https://api.monday.com/v2';
 const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ0MDg4NTQyOCwiYWFpIjoxMSwidWlkIjo2ODM2OTE2NywiaWFkIjoiMjAyNC0xMS0yNVQxNDo1MDoxMC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjYwMjU0NjcsInJnbiI6ImV1YzEifQ.A1QEGxOKIkdDEZHvyBiJerxztc9grWVdI3EjEmxM38U';
 
 const BOARDS = {
-  protocol: 5093376402,
+  protocol: 1718595738,
   projects: 1718594394,
+  tasks: 1718595865,
   contacts: 1877350141,
 };
 
@@ -135,26 +136,42 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// POST /api/protocol — create a new protocol item on the protocol board
+// POST /api/protocol — create a new protocol item on board 1718595738 (פרוטוקול)
 app.post('/api/protocol', async (req, res) => {
   try {
-    const { name, description, date } = req.body;
-    const columnValues = JSON.stringify({
-      text_mm1js7hj: description || '',
-      date_mm1jmzrh: { date },
-    });
+    const { name, date, location, projectId, recorderId, taskIds } = req.body;
+
+    const PROTOCOL_BOARD = 1718595738;
+    const colVals = {};
+
+    // Date
+    if (date) colVals.date4 = { date };
+
+    // Location
+    if (location) colVals.text_mkkstk45 = location;
+
+    // Link to project
+    if (projectId) colVals.connect_boards__1 = { item_ids: [Number(projectId)] };
+
+    // Recorder (who filled the protocol)
+    if (recorderId) colVals.people_mkktj646 = { personsAndTeams: [{ id: Number(recorderId), kind: 'person' }] };
+
+    // Link to tasks
+    if (taskIds && taskIds.length > 0) {
+      colVals.board_relation_mm1hhbed = { item_ids: taskIds.map(Number) };
+    }
 
     const data = await mondayQuery(
       `mutation ($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
-        create_item(board_id: $boardId, group_id: "group_mm1jh8px", item_name: $itemName, column_values: $columnValues) {
+        create_item(board_id: $boardId, group_id: "new_group_mkkf3c5z", item_name: $itemName, column_values: $columnValues) {
           id
           name
         }
       }`,
       {
-        boardId: String(BOARDS.protocol),
+        boardId: String(PROTOCOL_BOARD),
         itemName: name,
-        columnValues: columnValues,
+        columnValues: JSON.stringify(colVals),
       }
     );
 
