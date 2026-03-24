@@ -897,9 +897,9 @@ function buildPdfHtml(data, bg1, bg2) {
   if (data.location) {
     headerHtml += '<span style="position:absolute;top:262px;right:26px;' + txtS + 'direction:rtl;">מיקום הפגישה : ' + escapeHtml(data.location) + '</span>';
   }
-  var phaseLine = 'בשלב ביצוע הפגישה : ' + escapeHtml(data.phase || '');
-  if (data.summary) phaseLine += ', ' + escapeHtml(data.summary);
-  headerHtml += '<span style="position:absolute;top:282px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.4;">' + phaseLine + '</span>';
+  if (data.summary) {
+    headerHtml += '<span style="position:absolute;top:282px;right:26px;left:66px;' + txtS + 'direction:rtl;line-height:1.4;">בשלב ביצוע הפגישה : ' + escapeHtml(data.summary) + '</span>';
+  }
   headerHtml += '<span style="position:absolute;top:302px;right:26px;' + txtS + 'direction:rtl;">להלן הסיכומים:-</span>';
 
   // Table at fixed position (matching chatbot P1_TABLE_TOP)
