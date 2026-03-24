@@ -1002,16 +1002,16 @@ function cleanDescription(desc, ownerName) {
     }
   }
 
-  // Remove Hebrew month date patterns: "עד ה-30 למרץ 2027", "ה-30 למרץ", "בתאריך 28 למרץ"
+  // Remove Hebrew month date patterns: "עד ה-30 למרץ 2027", "ל-30 למרץ", "בתאריך 28 למרץ"
   var monthWords = 'ינואר|פברואר|מרץ|מרס|אפריל|מאי|יוני|יולי|אוגוסט|ספטמבר|אוקטובר|נובמבר|דצמבר';
-  clean = clean.replace(new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:ה[\\-\\s]?)?\\d{1,2}\\s+(?:ל|ב|של\\s+)?(?:' + monthWords + ')(?:\\s+\\d{2,4})?', 'g'), '');
+  clean = clean.replace(new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:[הל][\\-\\s]?)?\\d{1,2}\\s+(?:ל|ב|של\\s+)?(?:' + monthWords + ')(?:\\s+\\d{2,4})?', 'g'), '');
 
   // Remove Hebrew ordinal date patterns: "הראשון ליולי 2026"
   var ordWords = 'ראשון|הראשון|שני|השני|שלישי|השלישי|רביעי|הרביעי|חמישי|החמישי|שישי|השישי|שביעי|השביעי|שמיני|השמיני|תשיעי|התשיעי|עשירי|העשירי|עשרים|שלושים';
   clean = clean.replace(new RegExp('(?:עד\\s+)?(?:' + ordWords + ')\\s+(?:ל|ב|של\\s+)?(?:' + monthWords + ')(?:\\s+\\d{2,4})?', 'g'), '');
 
-  // Remove numeric date patterns: "עד ה-23 ל-12 2027"
-  clean = clean.replace(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?\d{1,2}\s+(?:ל[\-\s]?)?\d{1,2}(?:\s+\d{2,4})?/g, '');
+  // Remove numeric date patterns: "עד ל-23 ל-12 2018", "עד ה-23 ל-12 2027"
+  clean = clean.replace(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:[הל][\-\s]?)?\d{1,2}\s+(?:[הל][\-\s]?)?\d{1,2}(?:\s+\d{2,4})?/g, '');
 
   // Remove slash/dot dates: "30/03/2027", "30.03.2027"
   clean = clean.replace(/(?:עד\s+)?\d{1,2}[\/\.]\d{1,2}(?:[\/\.]\d{2,4})?/g, '');
@@ -1085,7 +1085,7 @@ function localParseTask(text, participantNames, meetingDate) {
   // Helper: resolve a day token (digit or Hebrew word) to a number
   function resolveDay(token) {
     if (!token) return 0;
-    token = token.trim().replace(/^ה[\-]?/, '');
+    token = token.trim().replace(/^[הל][\-]?/, '');
     if (/^\d+$/.test(token)) return parseInt(token, 10);
     if (hebrewNumbers[token]) return hebrewNumbers[token];
     // Compound: "עשרים ושלוש" → look for base in the token
@@ -1106,7 +1106,7 @@ function localParseTask(text, participantNames, meetingDate) {
   // Examples: "עד ה-25 למרץ 2026", "הראשון ליולי 2026", "בתאריך 28 למרץ", "ה-3 לאפריל"
   var dayWords = Object.keys(hebrewNumbers).join('|');
   var monthWords = Object.keys(hebrewMonths).join('|');
-  var dateRegex = new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:ה[\\-\\s]?)?(\\d{1,2}|' + dayWords + ')\\s+(?:ל|ב|של\\s+)?(' + monthWords + ')(?:\\s+(\\d{2,4}))?', '');
+  var dateRegex = new RegExp('(?:עד\\s+(?:ל?תאריך\\s+)?)?(?:[הל][\\-\\s]?)?(\\d{1,2}|' + dayWords + ')\\s+(?:ל|ב|של\\s+)?(' + monthWords + ')(?:\\s+(\\d{2,4}))?', '');
   var hebrewMonthMatch = text.match(dateRegex);
   if (hebrewMonthMatch) {
     var day = resolveDay(hebrewMonthMatch[1]);
@@ -1120,7 +1120,7 @@ function localParseTask(text, participantNames, meetingDate) {
 
   // Pattern 2: עד ה-23 ל-12 or עד ה 23 ל 12 (numeric day + numeric month)
   if (!result.dueDate) {
-    var dateMatch1 = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:ה[\-\s]?)?(\d{1,2})\s+(?:ל[\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
+    var dateMatch1 = text.match(/(?:עד|בתאריך|לתאריך)\s+(?:ל?תאריך\s+)?(?:[הל][\-\s]?)?(\d{1,2})\s+(?:[הל][\-\s]?)?(\d{1,2})(?:\s+(\d{2,4}))?/);
     if (dateMatch1) {
       var d1 = dateMatch1[1].padStart(2, '0');
       var m1 = dateMatch1[2].padStart(2, '0');
