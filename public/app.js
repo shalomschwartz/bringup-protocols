@@ -963,17 +963,7 @@ function buildPdfHtml(data, bg1, bg2) {
       filled += '<td style="' + tdStyle(COL_NUM) + '">' + (startIdx + i + 1) + '</td>';
       filled += '</tr>';
     });
-    // Fill remaining space with borderless white rows
-    var empty = '';
-    for (var j = 0; j < maxRows - tArr.length; j++) {
-      empty += '<tr style="height:' + rowH + 'px;">';
-      empty += '<td style="width:' + COL_RESP + 'px;background:white;border:none;"></td>';
-      empty += '<td style="width:' + COL_DATE + 'px;background:white;border:none;"></td>';
-      empty += '<td style="width:' + COL_DESC + 'px;background:white;border:none;"></td>';
-      empty += '<td style="width:' + COL_NUM + 'px;background:white;border:none;"></td>';
-      empty += '</tr>';
-    }
-    return filled + empty;
+    return filled;
   }
 
   function makeTable(top, rows) {
@@ -1028,24 +1018,35 @@ function buildPdfHtml(data, bg1, bg2) {
       + '</div>';
   }
 
-  // Footer positioned right below the full table (including empty rows)
+  // Footer positioned right below the actual tasks (not empty rows)
   var footerTop;
   if (needsP2) {
-    footerTop = P2_TABLE_TOP + HEADER_ROW_H + (P2_MAX * p2RowH) + 10;
+    footerTop = P2_TABLE_TOP + HEADER_ROW_H + (p2Tasks.length * p2RowH) + 15;
   } else {
-    footerTop = tableTop + HEADER_ROW_H + (P1_MAX * p1RowH) + 10;
+    footerTop = tableTop + HEADER_ROW_H + (p1Tasks.length * p1RowH) + 15;
   }
   // Don't go below the letterhead contact info area
   footerTop = Math.min(footerTop, PAGE_H - 85);
+
+  // White cover div to hide the background image below the table
+  var coverDiv = '';
+  var actualTaskCount = needsP2 ? p2Tasks.length : p1Tasks.length;
+  var actualTableTop = needsP2 ? P2_TABLE_TOP : tableTop;
+  var actualRowH = needsP2 ? p2RowH : p1RowH;
+  var tableBottom = actualTableTop + HEADER_ROW_H + (actualTaskCount * actualRowH);
+  var coverBottom = PAGE_H - 65; // just above letterhead contact info
+  if (coverBottom > tableBottom) {
+    coverDiv = '<div style="position:absolute;top:' + tableBottom + 'px;left:0;width:' + PAGE_W + 'px;height:' + (coverBottom - tableBottom) + 'px;background:white;z-index:2;"></div>';
+  }
 
   var footerHtml = '<div style="position:absolute;top:' + footerTop + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
     + '<div>רשם: ' + escapeHtml(data.recorder || '') + '</div>'
     + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
 
   if (needsP2) {
-    page2 = page2.slice(0, -6) + footerHtml + '</div>';
+    page2 = page2.slice(0, -6) + coverDiv + footerHtml + '</div>';
   } else {
-    page1 = page1.slice(0, -6) + footerHtml + '</div>';
+    page1 = page1.slice(0, -6) + coverDiv + footerHtml + '</div>';
   }
 
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;">' + page1 + page2 + '</body></html>';
