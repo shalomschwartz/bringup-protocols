@@ -598,7 +598,12 @@ function addTask() {
   renderTasks();
 
   // Keep form open with fresh defaults for next task
-  document.getElementById('task-desc').value = '';
+  var descField = document.getElementById('task-desc');
+  descField.value = '';
+  descField.placeholder = 'עוד משימה...';
+  descField.style.border = '1.5px solid #1f8c5f';
+  descField.style.boxShadow = '0 0 6px rgba(31,140,95,0.3)';
+  setTimeout(function() { descField.style.border = ''; descField.style.boxShadow = ''; }, 2000);
   document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
   // Reset owner to דן דורון
   var sel = document.getElementById('task-owner');
@@ -607,7 +612,7 @@ function addTask() {
   }
   manualOn = true;
   document.getElementById('rec-form').style.display = 'block';
-  document.getElementById('task-desc').focus();
+  descField.focus();
 }
 
 function removeTask(idx) {
