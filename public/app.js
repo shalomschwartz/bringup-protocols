@@ -858,7 +858,7 @@ function buildDocxDocument(data, D) {
   // RTL helper for paragraphs
   var rtlP = function(txt, opts) {
     opts = opts || {};
-    return new D.Paragraph(Object.assign({ alignment: D.AlignmentType.RIGHT, bidirectional: true }, opts, {
+    return new D.Paragraph(Object.assign({ alignment: D.AlignmentType.RIGHT }, opts, {
       children: [new D.TextRun({ text: txt, font: 'Arial', size: opts.sz || 24, rightToLeft: true, bold: opts.bold || false })]
     }));
   };
@@ -875,10 +875,10 @@ function buildDocxDocument(data, D) {
   var headerRow = new D.TableRow({
     tableHeader: true,
     children: [
-      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
-      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
-      new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
-      new D.TableCell({ borders: borders, width: { size: 800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
     ]
   });
 
@@ -886,9 +886,9 @@ function buildDocxDocument(data, D) {
     var desc = cleanDescription(t.desc || '', t.owner || '');
     return new D.TableRow({
       children: [
-        new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
+        new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
         new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.date ? formatDateHe(t.date) : '', font: 'Arial', size: 22 })] })] }),
-        new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+        new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
         new D.TableCell({ borders: borders, width: { size: 800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: String(i + 1), font: 'Arial', size: 22 })] })] }),
       ]
     });
@@ -919,7 +919,7 @@ function buildDocxDocument(data, D) {
     rtlP('לכבוד רשימת התפוצה'),
     // הנדון
     new D.Paragraph({
-      alignment: D.AlignmentType.CENTER, bidirectional: true, spacing: { before: 100 },
+      alignment: D.AlignmentType.CENTER, spacing: { before: 100 },
       children: [
         new D.TextRun({ text: 'הנדון – ', font: 'Arial', size: 24, rightToLeft: true }),
         new D.TextRun({ text: (data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate, font: 'Arial', size: 24, bold: true, underline: {}, rightToLeft: true }),
