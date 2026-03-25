@@ -773,7 +773,7 @@ function storeProtocolData() {
   const summary = document.getElementById('meeting-summary').value;
   const selected = state.participants.filter(p => p.selected);
   const phase = proj?.columns?.portfolio_project_step?.text || '';
-  const recorder = selected.length > 0 ? selected[0].name : '';
+  const recorder = 'דני הוכמן';
 
   const protocolData = {
     projectName: proj ? proj.name : '',
