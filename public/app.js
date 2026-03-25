@@ -179,7 +179,7 @@ function buildParticipantsList() {
       name: u.name,
       role: '',
       email: u.email,
-      selected: false,
+      selected: u.name.includes('דני הוכמן'),
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     });
   });
