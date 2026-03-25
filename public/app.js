@@ -496,7 +496,7 @@ function buildExternalContactsList(filter) {
   const q = (filter || '').trim().toLowerCase();
   const filtered = state.externalContacts
     .map((c, i) => ({ ...c, idx: i }))
-    .filter(c => !q || c.name.toLowerCase().includes(q));
+    .filter(c => !q || c.name.toLowerCase().startsWith(q) || c.name.split(' ').some(w => w.toLowerCase().startsWith(q)));
 
   if (!filtered.length) {
     container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">לא נמצאו תוצאות</div>';
