@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { name, date, location, summary, projectId, recorderId, taskIds } = req.body;
+    const { name, date, location, summary, projectId, recorderId, taskIds, externalContactIds } = req.body;
 
     const colVals = {};
 
@@ -19,6 +19,9 @@ module.exports = async function handler(req, res) {
     if (recorderId) colVals.people_mkktj646 = { personsAndTeams: [{ id: Number(recorderId), kind: 'person' }] };
     if (taskIds && taskIds.length > 0) {
       colVals.board_relation_mm1hhbed = { item_ids: taskIds.map(Number) };
+    }
+    if (externalContactIds && externalContactIds.length > 0) {
+      colVals.board_relation_mm1smjgs = { item_ids: externalContactIds.map(Number) };
     }
 
     const data = await mondayQuery(

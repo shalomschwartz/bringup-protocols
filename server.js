@@ -13,7 +13,7 @@ const BOARDS = {
   protocol: 1718595738,
   projects: 1718594394,
   tasks: 1718595865,
-  contacts: 1877350141,
+  contacts: 1718596075,
 };
 
 async function mondayQuery(query, variables) {

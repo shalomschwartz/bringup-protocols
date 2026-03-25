@@ -4,6 +4,7 @@ const state = {
   users: [],
   selectedProject: null,
   participants: [],   // { id, name, role, selected, color }
+  externalContacts: [],  // { id, name, role, group, selected }
   tasks: [],          // { desc, owner, date }
   currentStep: 1,
 };
@@ -28,16 +29,21 @@ async function loadData() {
   document.getElementById('screen1').classList.remove('active');
 
   try {
-    const [projects, users] = await Promise.all([
+    const [projects, users, contacts] = await Promise.all([
       fetch('/api/projects').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
+      fetch('/api/contacts').then(r => r.json()).catch(() => []),
     ]);
 
     state.projects = projects;
     state.users = users;
+    state.externalContacts = (contacts || []).map(c => ({
+      id: c.id, name: c.name, role: c.role || '', group: c.group || '', selected: false,
+    }));
 
     populateProjectDropdown();
     buildParticipantsList();
+    buildExternalContactsList();
     buildTaskOwnerDropdown();
   } catch (err) {
     console.error('Failed to load data:', err);
@@ -480,17 +486,49 @@ function cancelManualTask() {
   document.getElementById('task-date').value = '';
 }
 
+function buildExternalContactsList() {
+  const container = document.getElementById('external-participants-list');
+  if (!container) return;
+  if (!state.externalContacts.length) {
+    container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">אין אנשי קשר חיצוניים</div>';
+    return;
+  }
+  container.innerHTML = state.externalContacts.map((c, i) => `
+    <div class="participant-row" onclick="toggleExtContact(${i})" style="cursor:pointer;">
+      <div class="chk ${c.selected ? '' : 'chk-off'}" id="ext-chk-${i}">
+        ${c.selected ? '<svg viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+      </div>
+      <div class="avatar av-o">${c.name.charAt(0)}</div>
+      <div style="flex:1;direction:rtl;"><div class="pname">${c.name}</div><div class="prole">${c.role || c.group || ''}</div></div>
+    </div>
+  `).join('');
+}
+
+function toggleExtContact(idx) {
+  state.externalContacts[idx].selected = !state.externalContacts[idx].selected;
+  buildExternalContactsList();
+  buildTaskOwnerDropdown();
+}
+
 function buildTaskOwnerDropdown() {
   const sel = document.getElementById('task-owner');
   sel.innerHTML = '';
   const selected = state.participants.filter(p => p.selected);
   selected.forEach(p => {
     const opt = document.createElement('option');
-    // Store both name and Monday user ID (user-XXXXX -> XXXXX)
     const mondayId = p.id.startsWith('user-') ? p.id.replace('user-', '') : '';
     opt.value = p.name;
     opt.dataset.userId = mondayId;
     opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  // Also add selected external contacts
+  const extSelected = state.externalContacts.filter(c => c.selected);
+  extSelected.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.name;
+    opt.dataset.contactId = c.id;
+    opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '');
     sel.appendChild(opt);
   });
 }
@@ -636,8 +674,10 @@ function buildPreview() {
     'פרוטוקול פגישה' + (proj ? ' — ' + proj.name : '');
   document.getElementById('preview-date').textContent = date ? formatDateHe(date) : '';
   document.getElementById('preview-location').textContent = location || '';
+  const extSelected = state.externalContacts.filter(c => c.selected);
+  const allNames = [...selected.map(p => p.name), ...extSelected.map(c => c.name)];
   document.getElementById('preview-participants').textContent =
-    selected.map(p => p.name).join(', ') || 'לא נבחרו';
+    allNames.join(', ') || 'לא נבחרו';
 
   // Show summary if provided
   const summaryVal = document.getElementById('meeting-summary').value.trim();
@@ -690,7 +730,7 @@ function storeProtocolData() {
     date,
     location,
     summary,
-    participants: selected.map(p => p.name),
+    participants: [...selected.map(p => p.name), ...state.externalContacts.filter(c => c.selected).map(c => c.name)],
     tasks: state.tasks.map(t => ({ desc: t.desc, owner: t.owner, date: t.date })),
     phase,
     recorder,
@@ -1016,6 +1056,7 @@ async function sendToMonday() {
         projectId: proj?.id || '',
         recorderId,
         taskIds,
+        externalContactIds: state.externalContacts.filter(c => c.selected).map(c => c.id),
       }),
     });
     const protocol = await protocolRes.json();
