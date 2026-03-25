@@ -894,23 +894,33 @@ function buildDocxDocument(data, D) {
 
   var children = [
     // Company header — styled text with dark blue background
-    new D.Paragraph({
-      alignment: D.AlignmentType.LEFT,
-      spacing: { after: 0 },
-      shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
-      children: [
-        new D.TextRun({ text: '  REUVEN HOCH', font: 'Arial', size: 32, bold: true, color: 'FFFFFF' }),
-        new D.TextRun({ text: 'M', font: 'Arial', size: 32, bold: true, color: 'E24B4A' }),
-        new D.TextRun({ text: 'AN 1990 Ltd', font: 'Arial', size: 32, bold: true, color: 'FFFFFF' }),
-      ]
-    }),
-    new D.Paragraph({
-      alignment: D.AlignmentType.LEFT,
-      spacing: { before: 0, after: 200 },
-      shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
-      children: [
-        new D.TextRun({ text: '  B u i l d i n g   C o n s t r u c t i o n', font: 'Arial', size: 18, color: 'CCCCCC' }),
-      ]
+    new D.Table({
+      width: { size: 4800, type: D.WidthType.DXA },
+      columnWidths: [4800],
+      rows: [new D.TableRow({
+        children: [new D.TableCell({
+          width: { size: 4800, type: D.WidthType.DXA },
+          shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
+          borders: { top: { style: D.BorderStyle.NONE }, bottom: { style: D.BorderStyle.NONE }, left: { style: D.BorderStyle.NONE }, right: { style: D.BorderStyle.NONE } },
+          margins: { top: 80, bottom: 80, left: 120, right: 120 },
+          children: [
+            new D.Paragraph({
+              alignment: D.AlignmentType.LEFT, spacing: { after: 0 },
+              children: [
+                new D.TextRun({ text: 'REUVEN HOCH', font: 'Arial', size: 30, bold: true, color: 'FFFFFF' }),
+                new D.TextRun({ text: 'M', font: 'Arial', size: 30, bold: true, color: 'E24B4A' }),
+                new D.TextRun({ text: 'AN 1990 Ltd', font: 'Arial', size: 30, bold: true, color: 'FFFFFF' }),
+              ]
+            }),
+            new D.Paragraph({
+              alignment: D.AlignmentType.LEFT, spacing: { before: 0 },
+              children: [
+                new D.TextRun({ text: 'B u i l d i n g   C o n s t r u c t i o n', font: 'Arial', size: 16, color: 'CCCCCC' }),
+              ]
+            }),
+          ]
+        })]
+      })],
     }),
     // Date
     new D.Paragraph({ alignment: D.AlignmentType.LEFT, spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
