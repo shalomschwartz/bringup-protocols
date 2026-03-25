@@ -1039,7 +1039,7 @@ function buildPdfHtml(data, bg1, bg2) {
     coverDiv = '<div style="position:absolute;top:' + tableBottom + 'px;left:0;width:' + PAGE_W + 'px;height:' + (coverBottom - tableBottom) + 'px;background:white;z-index:2;"></div>';
   }
 
-  var footerHtml = '<div style="position:absolute;top:' + footerTop + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;">'
+  var footerHtml = '<div style="position:absolute;top:' + footerTop + 'px;right:26px;' + txtS + 'font-size:13px;direction:rtl;line-height:1.8;z-index:3;">'
     + '<div>רשם: ' + escapeHtml(data.recorder || '') + '</div>'
     + '<div>תפוצה : משתתפי הפגישה' + (participants ? ', ' + escapeHtml(participants) : '') + '</div></div>';
 
