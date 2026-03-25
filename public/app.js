@@ -486,22 +486,36 @@ function cancelManualTask() {
   document.getElementById('task-date').value = '';
 }
 
-function buildExternalContactsList() {
+function buildExternalContactsList(filter) {
   const container = document.getElementById('external-participants-list');
   if (!container) return;
   if (!state.externalContacts.length) {
     container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">אין אנשי קשר חיצוניים</div>';
     return;
   }
-  container.innerHTML = state.externalContacts.map((c, i) => `
-    <div class="participant-row" onclick="toggleExtContact(${i})" style="cursor:pointer;">
-      <div class="chk ${c.selected ? '' : 'chk-off'}" id="ext-chk-${i}">
+  const q = (filter || '').trim().toLowerCase();
+  const filtered = state.externalContacts
+    .map((c, i) => ({ ...c, idx: i }))
+    .filter(c => !q || c.name.toLowerCase().includes(q));
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">לא נמצאו תוצאות</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(c => `
+    <div class="participant-row" onclick="toggleExtContact(${c.idx})" style="cursor:pointer;">
+      <div class="chk ${c.selected ? '' : 'chk-off'}" id="ext-chk-${c.idx}">
         ${c.selected ? '<svg viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
       </div>
       <div class="avatar av-o">${c.name.charAt(0)}</div>
       <div style="flex:1;direction:rtl;"><div class="pname">${c.name}</div><div class="prole">${c.role || c.group || ''}</div></div>
     </div>
   `).join('');
+}
+
+function filterExternalContacts() {
+  const q = document.getElementById('ext-search')?.value || '';
+  buildExternalContactsList(q);
 }
 
 function toggleExtContact(idx) {
