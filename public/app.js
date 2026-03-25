@@ -73,7 +73,17 @@ function goStep(n) {
     }
   }
 
-  if (n === 3) buildTaskOwnerDropdown();
+  if (n === 3) {
+    buildTaskOwnerDropdown();
+    // Set defaults: דן דורון + today
+    var ownerSel = document.getElementById('task-owner');
+    for (var j = 0; j < ownerSel.options.length; j++) {
+      if (ownerSel.options[j].text.includes('דן דורון')) { ownerSel.selectedIndex = j; break; }
+    }
+    document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('task-desc').value = '';
+    document.getElementById('task-desc').focus();
+  }
 }
 
 // ── Screen 1: Projects ──
@@ -241,17 +251,75 @@ let recOn = false;
 let manualOn = false;
 let recognition = null;
 let fullTranscript = '';
-let silenceTimer = null;
-const SILENCE_TIMEOUT = 3000; // Auto-stop after 3 seconds of silence
 
 // Check browser support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function toggleRec() {
-  if (recOn) {
-    stopRecording();
+// ── Inline mic button for speech-to-text in description field ──
+let micActive = false;
+let micRecognition = null;
+
+function toggleDescMic() {
+  if (micActive) {
+    stopDescMic();
   } else {
-    startRecording();
+    startDescMic();
+  }
+}
+
+function startDescMic() {
+  if (!SpeechRecognition) {
+    alert('הדפדפן לא תומך בהקלטה. נסה Chrome.');
+    return;
+  }
+  micActive = true;
+  var btn = document.getElementById('mic-btn');
+  btn.classList.add('mic-active');
+  btn.textContent = '⏹';
+
+  var descField = document.getElementById('task-desc');
+
+  micRecognition = new SpeechRecognition();
+  micRecognition.lang = 'he-IL';
+  micRecognition.continuous = true;
+  micRecognition.interimResults = true;
+
+  var existingText = descField.value ? descField.value + ' ' : '';
+
+  micRecognition.onresult = function(event) {
+    var transcript = '';
+    for (var i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    descField.value = existingText + transcript;
+  };
+
+  micRecognition.onend = function() {
+    if (micActive) {
+      try { micRecognition.start(); } catch (e) {}
+    }
+  };
+
+  micRecognition.onerror = function(e) {
+    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      console.error('Mic error:', e.error);
+      stopDescMic();
+    }
+  };
+
+  try { micRecognition.start(); } catch (e) { stopDescMic(); }
+}
+
+function stopDescMic() {
+  micActive = false;
+  var btn = document.getElementById('mic-btn');
+  if (btn) {
+    btn.classList.remove('mic-active');
+    btn.textContent = '🎙';
+  }
+  if (micRecognition) {
+    try { micRecognition.stop(); } catch (e) {}
+    micRecognition = null;
   }
 }
 
