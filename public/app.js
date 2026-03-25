@@ -851,62 +851,124 @@ async function downloadDocumentPDF() {
   }
 }
 
+function buildDocxDocument(data, D) {
+  var participants = (data.participants || []).join(', ');
+  var formattedDate = formatDateHe(data.date);
+
+  // RTL helper for paragraphs
+  var rtlP = function(txt, opts) {
+    opts = opts || {};
+    return new D.Paragraph(Object.assign({ alignment: D.AlignmentType.RIGHT, bidirectional: true }, opts, {
+      children: [new D.TextRun({ text: txt, font: 'Arial', size: opts.sz || 24, rightToLeft: true, bold: opts.bold || false })]
+    }));
+  };
+
+  // Table cell helper
+  var hdrFill = { fill: '1B2A4A', type: D.ShadingType.CLEAR };
+  var hdrMar = { top: 60, bottom: 60, left: 80, right: 80 };
+  var dataMar = { top: 40, bottom: 40, left: 80, right: 80 };
+  var border = { style: D.BorderStyle.SINGLE, size: 1, color: '000000' };
+  var borders = { top: border, bottom: border, left: border, right: border };
+
+  // RTL table: columns defined right-to-left visually
+  // Visual order (right to left): ס'פ | הסיכום | לביצוע עד | אחריות
+  var headerRow = new D.TableRow({
+    tableHeader: true,
+    children: [
+      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+      new D.TableCell({ borders: borders, width: { size: 800, type: D.WidthType.DXA }, shading: hdrFill, margins: hdrMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, color: 'FFFFFF', rightToLeft: true })] })] }),
+    ]
+  });
+
+  var taskRows = (data.tasks || []).map(function(t, i) {
+    var desc = cleanDescription(t.desc || '', t.owner || '');
+    return new D.TableRow({
+      children: [
+        new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
+        new D.TableCell({ borders: borders, width: { size: 1800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.date ? formatDateHe(t.date) : '', font: 'Arial', size: 22 })] })] }),
+        new D.TableCell({ borders: borders, width: { size: 5000, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+        new D.TableCell({ borders: borders, width: { size: 800, type: D.WidthType.DXA }, margins: dataMar, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: String(i + 1), font: 'Arial', size: 22 })] })] }),
+      ]
+    });
+  });
+
+  var children = [
+    // Company header — styled text with dark blue background
+    new D.Paragraph({
+      spacing: { after: 0 },
+      shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
+      children: [
+        new D.TextRun({ text: '  REUVEN HOCH', font: 'Arial', size: 32, bold: true, color: 'FFFFFF' }),
+        new D.TextRun({ text: 'M', font: 'Arial', size: 32, bold: true, color: 'E24B4A' }),
+        new D.TextRun({ text: 'AN 1990 Ltd', font: 'Arial', size: 32, bold: true, color: 'FFFFFF' }),
+      ]
+    }),
+    new D.Paragraph({
+      spacing: { before: 0, after: 200 },
+      shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
+      children: [
+        new D.TextRun({ text: '  B u i l d i n g   C o n s t r u c t i o n', font: 'Arial', size: 18, color: 'CCCCCC' }),
+      ]
+    }),
+    // Date
+    new D.Paragraph({ spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
+    new D.Paragraph({ spacing: { before: 200 } }),
+    // לכבוד
+    rtlP('לכבוד רשימת התפוצה'),
+    // הנדון
+    new D.Paragraph({
+      alignment: D.AlignmentType.CENTER, bidirectional: true, spacing: { before: 100 },
+      children: [
+        new D.TextRun({ text: 'הנדון – ', font: 'Arial', size: 24, rightToLeft: true }),
+        new D.TextRun({ text: (data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate, font: 'Arial', size: 24, bold: true, underline: {}, rightToLeft: true }),
+      ]
+    }),
+    // משתתפים
+    rtlP('משתתפים : ' + participants, { spacing: { before: 100 } }),
+  ];
+
+  if (data.location) children.push(rtlP('מיקום הפגישה : ' + data.location));
+  if (data.summary) children.push(rtlP('בשלב ביצוע הפגישה : ' + data.summary));
+
+  children.push(rtlP('להלן הסיכומים:-', { spacing: { before: 100 } }));
+  children.push(new D.Table({
+    width: { size: 9400, type: D.WidthType.DXA },
+    columnWidths: [1800, 1800, 5000, 800],
+    visuallyRightToLeft: true,
+    rows: [headerRow].concat(taskRows),
+  }));
+  children.push(new D.Paragraph({ spacing: { before: 400 } }));
+  children.push(rtlP('רשם: ' + (data.recorder || ''), { sz: 22 }));
+  children.push(rtlP('תפוצה : משתתפי הפגישה' + (participants ? ', ' + participants : ''), { sz: 22 }));
+
+  return new D.Document({
+    styles: { default: { document: { run: { font: 'Arial', size: 24, rightToLeft: true } } } },
+    sections: [{
+      properties: {
+        page: { size: { width: 11906, height: 16838 }, margin: { top: 1200, right: 1000, bottom: 1000, left: 1000 } },
+        bidi: true,
+      },
+      children: children,
+      footers: {
+        default: new D.Footer({
+          children: [new D.Paragraph({
+            alignment: D.AlignmentType.CENTER,
+            children: [new D.TextRun({ text: 'P.O.B. 3095 Herzliya | Tel. 09-9514920 | Fax. 09-9581351 | dan@dhbld.com', font: 'Arial', size: 18, color: 'E24B4A' })],
+          })],
+        }),
+      },
+    }],
+  });
+}
+
 async function generateDocxBlob() {
   storeProtocolData();
   var data = JSON.parse(localStorage.getItem('bringup_protocol'));
   await loadScript('https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js', 'docx');
   var D = window.docx;
-  var participants = (data.participants || []).join(', ');
-  var formattedDate = formatDateHe(data.date);
-
-  var logoResp = await fetch('bgimg/bg00001.jpg');
-  var logoBlob = await logoResp.blob();
-  var logoBuffer = await logoBlob.arrayBuffer();
-
-  var border = { style: D.BorderStyle.SINGLE, size: 1, color: '000000' };
-  var headerRow = new D.TableRow({
-    tableHeader: true,
-    children: [
-      new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-      new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-      new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-      new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-    ]
-  });
-  var taskRows = (data.tasks || []).map(function(t, i) {
-    var desc = cleanDescription(t.desc || '', t.owner || '');
-    return new D.TableRow({
-      children: [
-        new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: String(i + 1), font: 'Arial', size: 22 })] })] }),
-        new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.date ? formatDateHe(t.date) : '', font: 'Arial', size: 22 })] })] }),
-        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
-      ]
-    });
-  });
-
-  var doc = new D.Document({
-    styles: { default: { document: { run: { font: 'Arial', size: 24, rightToLeft: true } } } },
-    sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1200, right: 1000, bottom: 1000, left: 1000 } }, bidi: true },
-      children: [
-        new D.Paragraph({ children: [new D.ImageRun({ type: 'jpg', data: logoBuffer, transformation: { width: 250, height: 60 }, altText: { title: 'Logo', description: 'Reuven Hochman 1990 Ltd', name: 'logo' } })] }),
-        new D.Paragraph({ spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
-        new D.Paragraph({ spacing: { before: 200 } }),
-        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'לכבוד רשימת התפוצה', font: 'Arial', size: 24, rightToLeft: true })] }),
-        new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'הנדון – ', font: 'Arial', size: 24, rightToLeft: true }), new D.TextRun({ text: (data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate, font: 'Arial', size: 24, bold: true, underline: {}, rightToLeft: true })] }),
-        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'משתתפים : ' + participants, font: 'Arial', size: 24, rightToLeft: true })] }),
-        data.location ? new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'מיקום הפגישה : ' + data.location, font: 'Arial', size: 24, rightToLeft: true })] }) : new D.Paragraph({}),
-        data.summary ? new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'בשלב ביצוע הפגישה : ' + data.summary, font: 'Arial', size: 24, rightToLeft: true })] }) : new D.Paragraph({}),
-        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'להלן הסיכומים:-', font: 'Arial', size: 24, rightToLeft: true })] }),
-        new D.Table({ width: { size: 9400, type: D.WidthType.DXA }, columnWidths: [800, 5000, 1800, 1800], rows: [headerRow, ...taskRows] }),
-        new D.Paragraph({ spacing: { before: 400 } }),
-        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'רשם: ' + (data.recorder || ''), font: 'Arial', size: 22, rightToLeft: true })] }),
-        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'תפוצה : משתתפי הפגישה' + (participants ? ', ' + participants : ''), font: 'Arial', size: 22, rightToLeft: true })] }),
-      ],
-      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'P.O.B. 3095 Herzliya | Tel. 09-9514920 | Fax. 09-9581351 | dan@dhbld.com', font: 'Arial', size: 18, color: 'E24B4A' })] })] }) },
-    }],
-  });
+  var doc = buildDocxDocument(data, D);
   return D.Packer.toBlob(doc);
 }
 
@@ -962,143 +1024,7 @@ async function downloadDocumentDOCX() {
   try {
     await loadScript('https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js', 'docx');
     var D = window.docx;
-
-    var participants = (data.participants || []).join(', ');
-    var formattedDate = formatDateHe(data.date);
-
-    // Load logo image
-    var logoResp = await fetch('bgimg/bg00001.jpg');
-    var logoBlob = await logoResp.blob();
-    var logoBuffer = await logoBlob.arrayBuffer();
-
-    // Build task table rows
-    var headerRow = new D.TableRow({
-      tableHeader: true,
-      children: [
-        new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-        new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-      ]
-    });
-
-    var taskRows = (data.tasks || []).map(function(t, i) {
-      var desc = cleanDescription(t.desc || '', t.owner || '');
-      return new D.TableRow({
-        children: [
-          new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: String(i + 1), font: 'Arial', size: 22 })] })] }),
-          new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
-          new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.date ? formatDateHe(t.date) : '', font: 'Arial', size: 22 })] })] }),
-          new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
-        ]
-      });
-    });
-
-    var border = { style: D.BorderStyle.SINGLE, size: 1, color: '000000' };
-    var borders = { top: border, bottom: border, left: border, right: border };
-
-    var doc = new D.Document({
-      styles: {
-        default: { document: { run: { font: 'Arial', size: 24, rightToLeft: true } } },
-      },
-      sections: [{
-        properties: {
-          page: {
-            size: { width: 11906, height: 16838 },
-            margin: { top: 1200, right: 1000, bottom: 1000, left: 1000 },
-          },
-          bidi: true,
-        },
-        children: [
-          // Logo
-          new D.Paragraph({
-            children: [new D.ImageRun({
-              type: 'jpg',
-              data: logoBuffer,
-              transformation: { width: 250, height: 60 },
-              altText: { title: 'Logo', description: 'Reuven Hochman 1990 Ltd', name: 'logo' },
-            })],
-          }),
-          // Date
-          new D.Paragraph({
-            spacing: { before: 200 },
-            children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })],
-          }),
-          // Empty line
-          new D.Paragraph({ spacing: { before: 200 } }),
-          // לכבוד
-          new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            children: [new D.TextRun({ text: 'לכבוד רשימת התפוצה', font: 'Arial', size: 24, rightToLeft: true })],
-          }),
-          // הנדון
-          new D.Paragraph({
-            alignment: D.AlignmentType.CENTER,
-            bidirectional: true,
-            spacing: { before: 100 },
-            children: [
-              new D.TextRun({ text: 'הנדון – ', font: 'Arial', size: 24, rightToLeft: true }),
-              new D.TextRun({ text: (data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate, font: 'Arial', size: 24, bold: true, underline: {}, rightToLeft: true }),
-            ],
-          }),
-          // Participants
-          new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            spacing: { before: 100 },
-            children: [new D.TextRun({ text: 'משתתפים : ' + participants, font: 'Arial', size: 24, rightToLeft: true })],
-          }),
-          // Location
-          data.location ? new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            children: [new D.TextRun({ text: 'מיקום הפגישה : ' + data.location, font: 'Arial', size: 24, rightToLeft: true })],
-          }) : new D.Paragraph({}),
-          // Summary
-          data.summary ? new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            children: [new D.TextRun({ text: 'בשלב ביצוע הפגישה : ' + data.summary, font: 'Arial', size: 24, rightToLeft: true })],
-          }) : new D.Paragraph({}),
-          // להלן הסיכומים
-          new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            spacing: { before: 100 },
-            children: [new D.TextRun({ text: 'להלן הסיכומים:-', font: 'Arial', size: 24, rightToLeft: true })],
-          }),
-          // Task table
-          new D.Table({
-            width: { size: 9400, type: D.WidthType.DXA },
-            columnWidths: [800, 5000, 1800, 1800],
-            rows: [headerRow, ...taskRows],
-          }),
-          // Empty space
-          new D.Paragraph({ spacing: { before: 400 } }),
-          // רשם
-          new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            children: [new D.TextRun({ text: 'רשם: ' + (data.recorder || ''), font: 'Arial', size: 22, rightToLeft: true })],
-          }),
-          // תפוצה
-          new D.Paragraph({
-            alignment: D.AlignmentType.RIGHT,
-            bidirectional: true,
-            children: [new D.TextRun({ text: 'תפוצה : משתתפי הפגישה' + (participants ? ', ' + participants : ''), font: 'Arial', size: 22, rightToLeft: true })],
-          }),
-        ],
-        footers: {
-          default: new D.Footer({
-            children: [new D.Paragraph({
-              alignment: D.AlignmentType.CENTER,
-              children: [new D.TextRun({ text: 'P.O.B. 3095 Herzliya | Tel. 09-9514920 | Fax. 09-9581351 | dan@dhbld.com', font: 'Arial', size: 18, color: 'E24B4A' })],
-            })],
-          }),
-        },
-      }],
-    });
+    var doc = buildDocxDocument(data, D);
 
     var blob = await D.Packer.toBlob(doc);
     var url = URL.createObjectURL(blob);
