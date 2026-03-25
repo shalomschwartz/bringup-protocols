@@ -6,10 +6,14 @@
     { "source": "/api/protocol", "destination": "/api/protocol" },
     { "source": "/api/tasks", "destination": "/api/tasks" },
     { "source": "/api/parse-task", "destination": "/api/parse-task" },
-    { "source": "/api/upload-pdf", "destination": "/api/upload-pdf" }
+    { "source": "/api/upload-pdf", "destination": "/api/upload-pdf" },
+    { "source": "/api/upload-file", "destination": "/api/upload-file" }
   ],
   "functions": {
     "api/upload-pdf.js": {
+      "maxDuration": 30
+    },
+    "api/upload-file.js": {
       "maxDuration": 30
     }
   }

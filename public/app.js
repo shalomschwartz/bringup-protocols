@@ -851,6 +851,65 @@ async function downloadDocumentPDF() {
   }
 }
 
+async function generateDocxBlob() {
+  storeProtocolData();
+  var data = JSON.parse(localStorage.getItem('bringup_protocol'));
+  await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js', 'docx');
+  var D = window.docx;
+  var participants = (data.participants || []).join(', ');
+  var formattedDate = formatDateHe(data.date);
+
+  var logoResp = await fetch('bgimg/bg00001.jpg');
+  var logoBlob = await logoResp.blob();
+  var logoBuffer = await logoBlob.arrayBuffer();
+
+  var border = { style: D.BorderStyle.SINGLE, size: 1, color: '000000' };
+  var headerRow = new D.TableRow({
+    tableHeader: true,
+    children: [
+      new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: "ס'פ", bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+      new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'הסיכום', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+      new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'לביצוע עד', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+      new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, shading: { fill: 'E8E8E8', type: D.ShadingType.CLEAR }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'אחריות', bold: true, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+    ]
+  });
+  var taskRows = (data.tasks || []).map(function(t, i) {
+    var desc = cleanDescription(t.desc || '', t.owner || '');
+    return new D.TableRow({
+      children: [
+        new D.TableCell({ width: { size: 800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: String(i + 1), font: 'Arial', size: 22 })] })] }),
+        new D.TableCell({ width: { size: 5000, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: desc, font: 'Arial', size: 22, rightToLeft: true })] })] }),
+        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.date ? formatDateHe(t.date) : '', font: 'Arial', size: 22 })] })] }),
+        new D.TableCell({ width: { size: 1800, type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: t.owner || '', font: 'Arial', size: 22, rightToLeft: true })] })] }),
+      ]
+    });
+  });
+
+  var doc = new D.Document({
+    styles: { default: { document: { run: { font: 'Arial', size: 24, rightToLeft: true } } } },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1200, right: 1000, bottom: 1000, left: 1000 } }, bidi: true },
+      children: [
+        new D.Paragraph({ children: [new D.ImageRun({ type: 'jpg', data: logoBuffer, transformation: { width: 250, height: 60 }, altText: { title: 'Logo', description: 'Reuven Hochman 1990 Ltd', name: 'logo' } })] }),
+        new D.Paragraph({ spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
+        new D.Paragraph({ spacing: { before: 200 } }),
+        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'לכבוד רשימת התפוצה', font: 'Arial', size: 24, rightToLeft: true })] }),
+        new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'הנדון – ', font: 'Arial', size: 24, rightToLeft: true }), new D.TextRun({ text: (data.projectName || '') + ' – סיכום פגישה שבועית מתאריך ' + formattedDate, font: 'Arial', size: 24, bold: true, underline: {}, rightToLeft: true })] }),
+        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'משתתפים : ' + participants, font: 'Arial', size: 24, rightToLeft: true })] }),
+        data.location ? new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'מיקום הפגישה : ' + data.location, font: 'Arial', size: 24, rightToLeft: true })] }) : new D.Paragraph({}),
+        data.summary ? new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'בשלב ביצוע הפגישה : ' + data.summary, font: 'Arial', size: 24, rightToLeft: true })] }) : new D.Paragraph({}),
+        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, spacing: { before: 100 }, children: [new D.TextRun({ text: 'להלן הסיכומים:-', font: 'Arial', size: 24, rightToLeft: true })] }),
+        new D.Table({ width: { size: 9400, type: D.WidthType.DXA }, columnWidths: [800, 5000, 1800, 1800], rows: [headerRow, ...taskRows] }),
+        new D.Paragraph({ spacing: { before: 400 } }),
+        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'רשם: ' + (data.recorder || ''), font: 'Arial', size: 22, rightToLeft: true })] }),
+        new D.Paragraph({ alignment: D.AlignmentType.RIGHT, bidirectional: true, children: [new D.TextRun({ text: 'תפוצה : משתתפי הפגישה' + (participants ? ', ' + participants : ''), font: 'Arial', size: 22, rightToLeft: true })] }),
+      ],
+      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun({ text: 'P.O.B. 3095 Herzliya | Tel. 09-9514920 | Fax. 09-9581351 | dan@dhbld.com', font: 'Arial', size: 18, color: 'E24B4A' })] })] }) },
+    }],
+  });
+  return D.Packer.toBlob(doc);
+}
+
 async function generatePdfBlob() {
   storeProtocolData();
   var data = JSON.parse(localStorage.getItem('bringup_protocol'));
@@ -1286,28 +1345,27 @@ async function sendToMonday() {
 
     const protocolItemId = protocol.id || (protocol.data && protocol.data.create_item && protocol.data.create_item.id);
 
-    // 3. Generate PDF and upload to protocol item
+    // 3. Generate Word doc and upload to protocol item
     if (protocolItemId) {
-      textEl.textContent = 'מעלה PDF...';
+      textEl.textContent = 'מעלה Word...';
       try {
-        var pdfBlob = await generatePdfBlob();
-        if (pdfBlob) {
-          // Convert blob to base64
+        var docxBlob = await generateDocxBlob();
+        if (docxBlob) {
           var reader = new FileReader();
-          var pdfBase64 = await new Promise(function(resolve) {
+          var docxBase64 = await new Promise(function(resolve) {
             reader.onload = function() { resolve(reader.result.split(',')[1]); };
-            reader.readAsDataURL(pdfBlob);
+            reader.readAsDataURL(docxBlob);
           });
-          var pdfFilename = (proj ? proj.name : 'פרוטוקול') + '_' + formatDateHe(date).replace(/\./g, '-') + '.pdf';
+          var docxFilename = (proj ? proj.name : 'פרוטוקול') + '_' + formatDateHe(date).replace(/\./g, '-') + '.docx';
 
-          await fetch('/api/upload-pdf', {
+          await fetch('/api/upload-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itemId: protocolItemId, filename: pdfFilename, pdfBase64: pdfBase64 }),
+            body: JSON.stringify({ itemId: protocolItemId, filename: docxFilename, fileBase64: docxBase64 }),
           });
         }
-      } catch (pdfErr) {
-        console.error('PDF upload failed (non-critical):', pdfErr);
+      } catch (docErr) {
+        console.error('Word upload failed (non-critical):', docErr);
       }
     }
 
