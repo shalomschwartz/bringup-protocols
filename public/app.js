@@ -963,8 +963,16 @@ function buildPdfHtml(data, bg1, bg2) {
       filled += '<td style="' + tdStyle(COL_NUM) + '">' + (startIdx + i + 1) + '</td>';
       filled += '</tr>';
     });
-    // Empty rows — no borders, just whitespace
+    // Fill remaining space with borderless white rows
     var empty = '';
+    for (var j = 0; j < maxRows - tArr.length; j++) {
+      empty += '<tr style="height:' + rowH + 'px;">';
+      empty += '<td style="width:' + COL_RESP + 'px;background:white;border:none;"></td>';
+      empty += '<td style="width:' + COL_DATE + 'px;background:white;border:none;"></td>';
+      empty += '<td style="width:' + COL_DESC + 'px;background:white;border:none;"></td>';
+      empty += '<td style="width:' + COL_NUM + 'px;background:white;border:none;"></td>';
+      empty += '</tr>';
+    }
     return filled + empty;
   }
 
