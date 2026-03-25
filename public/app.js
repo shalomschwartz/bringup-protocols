@@ -936,7 +936,6 @@ function buildDocxDocument(data, D) {
   children.push(new D.Table({
     width: { size: 9400, type: D.WidthType.DXA },
     columnWidths: [1800, 1800, 5000, 800],
-    visuallyRightToLeft: true,
     rows: [headerRow].concat(taskRows),
   }));
   children.push(new D.Paragraph({ spacing: { before: 400 } }));
@@ -944,7 +943,20 @@ function buildDocxDocument(data, D) {
   children.push(rtlP('תפוצה : משתתפי הפגישה' + (participants ? ', ' + participants : ''), { sz: 22 }));
 
   return new D.Document({
-    styles: { default: { document: { run: { font: 'Arial', size: 24, rightToLeft: true } } } },
+    styles: {
+      default: {
+        document: {
+          run: { font: 'Arial', size: 24, rightToLeft: true },
+          paragraph: { alignment: D.AlignmentType.RIGHT, rightToLeft: true },
+        },
+      },
+      paragraphStyles: [{
+        id: 'Normal',
+        name: 'Normal',
+        run: { font: 'Arial', size: 24, rightToLeft: true },
+        paragraph: { alignment: D.AlignmentType.RIGHT },
+      }],
+    },
     sections: [{
       properties: {
         page: { size: { width: 11906, height: 16838 }, margin: { top: 1200, right: 1000, bottom: 1000, left: 1000 } },
