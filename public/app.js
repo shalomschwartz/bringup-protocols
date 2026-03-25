@@ -854,7 +854,7 @@ async function downloadDocumentPDF() {
 async function generateDocxBlob() {
   storeProtocolData();
   var data = JSON.parse(localStorage.getItem('bringup_protocol'));
-  await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js', 'docx');
+  await loadScript('https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js', 'docx');
   var D = window.docx;
   var participants = (data.participants || []).join(', ');
   var formattedDate = formatDateHe(data.date);
@@ -960,7 +960,7 @@ async function downloadDocumentDOCX() {
   var data = JSON.parse(localStorage.getItem('bringup_protocol'));
 
   try {
-    await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js', 'docx');
+    await loadScript('https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js', 'docx');
     var D = window.docx;
 
     var participants = (data.participants || []).join(', ');
