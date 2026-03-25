@@ -510,6 +510,44 @@ function toggleExtContact(idx) {
   buildTaskOwnerDropdown();
 }
 
+async function addNewContact() {
+  const name = document.getElementById('new-contact-name').value.trim();
+  const phone = document.getElementById('new-contact-phone').value.trim();
+  const email = document.getElementById('new-contact-email').value.trim();
+  if (!name) return alert('נא להזין שם');
+
+  const btn = document.querySelector('#add-contact-form .btn-primary');
+  btn.textContent = 'מוסיף...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email }),
+    });
+    const newContact = await res.json();
+    if (newContact.error) throw new Error(newContact.error);
+
+    state.externalContacts.push({
+      id: newContact.id, name: newContact.name || name, role: '', group: '', selected: true,
+    });
+    buildExternalContactsList();
+    buildTaskOwnerDropdown();
+
+    document.getElementById('new-contact-name').value = '';
+    document.getElementById('new-contact-phone').value = '';
+    document.getElementById('new-contact-email').value = '';
+    document.getElementById('add-contact-form').style.display = 'none';
+  } catch (err) {
+    console.error('Failed to add contact:', err);
+    alert('שגיאה בהוספת איש קשר');
+  } finally {
+    btn.textContent = '+ הוסף';
+    btn.disabled = false;
+  }
+}
+
 function buildTaskOwnerDropdown() {
   const sel = document.getElementById('task-owner');
   sel.innerHTML = '';
