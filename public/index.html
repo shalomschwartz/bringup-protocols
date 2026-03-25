@@ -179,13 +179,22 @@
         <span class="action-sub">יצירת משימות ופרוטוקול בבורד</span>
       </span>
     </button>
-    <button class="action-btn action-pdf" onclick="downloadDocumentPDF()">
-      <span class="action-icon">📄</span>
-      <span class="action-text">
-        <span class="action-main">הורד PDF</span>
-        <span class="action-sub">מסמך פרוטוקול עם נייר מכתבים</span>
-      </span>
-    </button>
+    <div style="display:flex;gap:8px;">
+      <button class="action-btn action-pdf" style="flex:1;" onclick="downloadDocumentPDF()">
+        <span class="action-icon">📄</span>
+        <span class="action-text">
+          <span class="action-main">הורד PDF</span>
+          <span class="action-sub">מסמך מוכן להדפסה</span>
+        </span>
+      </button>
+      <button class="action-btn action-pdf" style="flex:1;background:#2b579a;" onclick="downloadDocumentDOCX()">
+        <span class="action-icon">📝</span>
+        <span class="action-text">
+          <span class="action-main">הורד Word</span>
+          <span class="action-sub">מסמך לעריכה</span>
+        </span>
+      </button>
+    </div>
     <div id="send-status" style="display:none;direction:rtl;text-align:center;font-size:13px;padding:10px 0;border-radius:8px;margin-bottom:8px;"></div>
     <div class="nav-row">
       <button class="btn-back" onclick="goStep(3)">חזרה →</button>
