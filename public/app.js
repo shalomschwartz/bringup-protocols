@@ -897,6 +897,7 @@ function buildDocxDocument(data, D) {
   var children = [
     // Company header — styled text with dark blue background
     new D.Paragraph({
+      alignment: D.AlignmentType.LEFT,
       spacing: { after: 0 },
       shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
       children: [
@@ -906,6 +907,7 @@ function buildDocxDocument(data, D) {
       ]
     }),
     new D.Paragraph({
+      alignment: D.AlignmentType.LEFT,
       spacing: { before: 0, after: 200 },
       shading: { fill: '1B2A4A', type: D.ShadingType.CLEAR },
       children: [
@@ -913,7 +915,7 @@ function buildDocxDocument(data, D) {
       ]
     }),
     // Date
-    new D.Paragraph({ spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
+    new D.Paragraph({ alignment: D.AlignmentType.LEFT, spacing: { before: 200 }, children: [new D.TextRun({ text: formattedDate, font: 'Arial', size: 24 })] }),
     new D.Paragraph({ spacing: { before: 200 } }),
     // לכבוד
     rtlP('לכבוד רשימת התפוצה'),
