@@ -326,14 +326,6 @@ function startRecording() {
 
     const currentText = (fullTranscript + interim).trim();
     document.getElementById('rec-transcript').textContent = currentText || 'מקשיב...';
-
-    // Reset silence timer — user is still speaking
-    clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => {
-      if (recOn && fullTranscript.trim().length > 0) {
-        stopRecording();
-      }
-    }, SILENCE_TIMEOUT);
   };
 
   recognition.onerror = (event) => {
@@ -475,7 +467,14 @@ function toggleManualTask() {
     descField.value = '';
     descField.placeholder = 'תאר את המשימה...';
     descField.classList.remove('transcribing');
-    document.getElementById('task-date').value = '';
+    // Default date to today
+    document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+    // Default owner to דן דורון
+    var ownerSel = document.getElementById('task-owner');
+    for (var i = 0; i < ownerSel.options.length; i++) {
+      if (ownerSel.options[i].text.includes('דן דורון')) { ownerSel.selectedIndex = i; break; }
+    }
+    descField.focus();
   }
 }
 
@@ -574,15 +573,7 @@ function buildTaskOwnerDropdown() {
     opt.textContent = p.name;
     sel.appendChild(opt);
   });
-  // Also add selected external contacts
-  const extSelected = state.externalContacts.filter(c => c.selected);
-  extSelected.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name;
-    opt.dataset.contactId = c.id;
-    opt.textContent = c.name + (c.role ? ' (' + c.role + ')' : '');
-    sel.appendChild(opt);
-  });
+  // Only internal participants can be task owners (no external contacts)
 }
 
 function addTask() {
@@ -597,12 +588,19 @@ function addTask() {
 
   state.tasks.push({ desc, owner, ownerId, date });
 
-  document.getElementById('task-desc').value = '';
-  document.getElementById('task-date').value = '';
-
-  resetRecordingUI();
-
   renderTasks();
+
+  // Keep form open with fresh defaults for next task
+  document.getElementById('task-desc').value = '';
+  document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+  // Reset owner to דן דורון
+  var sel = document.getElementById('task-owner');
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].text.includes('דן דורון')) { sel.selectedIndex = i; break; }
+  }
+  manualOn = true;
+  document.getElementById('rec-form').style.display = 'block';
+  document.getElementById('task-desc').focus();
 }
 
 function removeTask(idx) {
