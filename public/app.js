@@ -584,7 +584,14 @@ function addTask() {
   const ownerId = selectedOpt ? selectedOpt.dataset.userId || '' : '';
   const date = document.getElementById('task-date').value;
 
-  if (!desc) return;
+  if (!desc) {
+    var descField = document.getElementById('task-desc');
+    descField.style.border = '1.5px solid #e24b4a';
+    descField.placeholder = 'נא להכניס שם משימה';
+    descField.focus();
+    setTimeout(function() { descField.style.border = ''; }, 2000);
+    return;
+  }
 
   state.tasks.push({ desc, owner, ownerId, date });
 
