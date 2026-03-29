@@ -227,13 +227,14 @@ body {
 
 /* Tasks */
 .task-row {
-  background: #f9f9f7;
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.08);
-  padding: 14px 16px;
-  margin-bottom: 10px;
+  background: #fff;
+  border-radius: 12px;
+  border: 2px solid #1a2744;
+  padding: 16px 18px;
+  margin-bottom: 12px;
   direction: rtl;
   text-align: right;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 .task-top {
   display: flex;
@@ -242,10 +243,11 @@ body {
   gap: 10px;
 }
 .task-text {
-  font-size: 17px;
+  font-size: 19px;
   color: #1a1a1a;
   flex: 1;
   line-height: 1.5;
+  font-weight: 600;
 }
 .task-meta {
   display: flex;
@@ -253,13 +255,14 @@ body {
   gap: 10px;
   margin-top: 8px;
 }
-.task-date { font-size: 14px; color: #666; }
+.task-date { font-size: 16px; color: #444; font-weight: 500; }
 .task-owner {
-  font-size: 14px;
-  background: #e6f1fb;
-  color: #185fa5;
-  padding: 3px 10px;
+  font-size: 16px;
+  background: #1a2744;
+  color: #fff;
+  padding: 4px 14px;
   border-radius: 20px;
+  font-weight: 600;
 }
 .task-remove {
   font-size: 20px;
@@ -417,62 +420,69 @@ body {
 .confirm-card {
   background: #fff;
   border-radius: 14px;
-  border: 1px solid rgba(0,0,0,0.08);
-  padding: 20px;
-  margin-bottom: 16px;
+  border: 2px solid #1a2744;
+  padding: 22px;
+  margin-bottom: 18px;
   direction: rtl;
   text-align: right;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
 }
 .confirm-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1a2744;
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e6f0;
 }
 .confirm-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 16px;
-  padding: 7px 0;
+  font-size: 18px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
-.confirm-label { color: #888; font-size: 15px; flex-shrink: 0; }
-.confirm-val { color: #1a1a1a; font-weight: 600; text-align: left; }
+.confirm-row:last-of-type { border-bottom: none; }
+.confirm-label { color: #1a2744; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.confirm-val { color: #333; font-weight: 500; text-align: left; font-size: 17px; }
 .confirm-count {
   background: #1a2744;
   color: #fff;
-  width: 28px; height: 28px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
 }
 .confirm-divider {
-  height: 1px;
-  background: rgba(0,0,0,0.08);
-  margin: 10px 0;
+  height: 2px;
+  background: #e0e6f0;
+  margin: 14px 0;
 }
 .confirm-tasks {
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
 }
 .confirm-task {
-  font-size: 15px;
-  color: #444;
-  padding: 6px 0;
-  border-bottom: 0.5px solid rgba(0,0,0,0.05);
+  font-size: 17px;
+  color: #1a1a1a;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f5f7fa;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: baseline;
 }
-.confirm-task:last-child { border-bottom: none; }
-.confirm-task-num { color: #1a2744; font-weight: 700; flex-shrink: 0; }
-.confirm-task-desc { flex: 1; }
-.confirm-task-meta { color: #888; font-size: 13px; flex-shrink: 0; }
+.confirm-task:last-child { margin-bottom: 0; }
+.confirm-task-num { color: #fff; background: #1a2744; font-weight: 700; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.confirm-task-desc { flex: 1; font-weight: 600; }
+.confirm-task-meta { color: #666; font-size: 14px; flex-shrink: 0; }
 
 /* Action buttons */
 .action-btn {
