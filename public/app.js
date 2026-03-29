@@ -65,8 +65,8 @@ function goStep(n) {
   }
 
   if (n === 2) {
-    // Set defaults: דן דורון + today
-    document.getElementById('task-owner').value = 'דן דורון';
+    // Set defaults: דני הוכמן + today
+    document.getElementById('task-owner').value = 'דני הוכמן';
     document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('task-desc').value = '';
     document.getElementById('task-desc').focus();
@@ -622,10 +622,10 @@ function toggleManualTask() {
     descField.classList.remove('transcribing');
     // Default date to today
     document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-    // Default owner to דן דורון
+    // Default owner to דני הוכמן
     var ownerSel = document.getElementById('task-owner');
     for (var i = 0; i < ownerSel.options.length; i++) {
-      if (ownerSel.options[i].text.includes('דן דורון')) { ownerSel.selectedIndex = i; break; }
+      if (ownerSel.options[i].text.includes('דני הוכמן')) { ownerSel.selectedIndex = i; break; }
     }
     descField.focus();
   }
@@ -755,7 +755,7 @@ function addTask() {
   descField.style.boxShadow = '0 0 6px rgba(31,140,95,0.3)';
   setTimeout(function() { descField.style.border = ''; descField.style.boxShadow = ''; }, 2000);
   document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('task-owner').value = 'דן דורון';
+  document.getElementById('task-owner').value = 'דני הוכמן';
   descField.focus();
 }
 
