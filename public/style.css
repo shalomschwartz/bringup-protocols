@@ -417,6 +417,10 @@ body {
   z-index: 2;
 }
 .mic-btn:hover { background: #1fb855; }
+.mic-btn-right {
+  left: auto;
+  right: 8px;
+}
 
 /* WhatsApp-style recording bar */
 .wa-rec-bar {
