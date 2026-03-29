@@ -616,5 +616,29 @@ body {
   font-weight: 600;
 }
 
+/* Distinct section boxes */
+.section-box {
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 16px;
+  direction: rtl;
+}
+.section-participants {
+  background: #f0f4ff;
+  border: 2px solid #a8bfee;
+}
+.section-task {
+  background: #f5f9f5;
+  border: 2px solid #8bc49a;
+}
+.section-header {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2744;
+  margin-bottom: 12px;
+  direction: rtl;
+  text-align: right;
+}
+
 /* Old recording styles (unused but kept for safety) */
 .rec-area { border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
