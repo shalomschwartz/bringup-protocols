@@ -139,7 +139,7 @@ app.get('/api/users', async (req, res) => {
 // POST /api/protocol — create a new protocol item on board 1718595738 (פרוטוקול)
 app.post('/api/protocol', async (req, res) => {
   try {
-    const { name, date, location, summary, projectId, recorderId, taskIds } = req.body;
+    const { name, date, location, summary, projectId, taskIds } = req.body;
 
     const PROTOCOL_BOARD = 1718595738;
     const colVals = {};
@@ -155,9 +155,6 @@ app.post('/api/protocol', async (req, res) => {
 
     // Link to project
     if (projectId) colVals.connect_boards__1 = { item_ids: [Number(projectId)] };
-
-    // Recorder (who filled the protocol)
-    if (recorderId) colVals.people_mkktj646 = { personsAndTeams: [{ id: Number(recorderId), kind: 'person' }] };
 
     // Link to tasks
     if (taskIds && taskIds.length > 0) {
@@ -206,7 +203,6 @@ app.post('/api/tasks', async (req, res) => {
       const colVals = {};
       if (task.date) colVals.date__1 = { date: task.date };
       if (projectId) colVals.link_to__________________1 = { item_ids: [Number(projectId)] };
-      if (task.ownerId) colVals.people__1 = { personsAndTeams: [{ id: Number(task.ownerId), kind: 'person' }] };
 
       const data = await mondayQuery(
         `mutation ($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
@@ -237,76 +233,58 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-// POST /api/parse-task — use Claude AI to parse spoken task into structured fields
-const CLAUDE_API_KEY = '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';
-
+// POST /api/parse-task — use OpenAI GPT-4o to parse spoken task into structured fields
 app.post('/api/parse-task', async (req, res) => {
   try {
-    const { text, participants, meetingDate } = req.body;
-    if (!text) return res.status(400).json({ error: 'text is required' });
+    const { text, participants } = req.body;
+    if (!text) return res.status(400).json({ error: 'No text' });
 
-    const today = new Date().toISOString().split('T')[0];
-    const dayName = new Date().toLocaleDateString('he-IL', { weekday: 'long' });
-    const refDate = meetingDate || today;
-
-    const prompt = `You are a task parser for a Hebrew construction project management app.
-Given this spoken Hebrew text from a meeting, extract the task details.
-
-Today is ${today} (${dayName}). The meeting date is ${refDate}.
-
-Available participants: ${(participants || []).join(', ')}
-
-Spoken text: "${text}"
-
-Return ONLY valid JSON with these fields:
-{
-  "description": "the task description in Hebrew (clean, concise, professional)",
-  "owner": "the responsible person's name (MUST exactly match one of the available participants, or empty string if unclear)",
-  "dueDate": "YYYY-MM-DD format (calculate from relative dates, or empty string if no date mentioned)"
-}
-
-Rules:
-- Match owner name EXACTLY to one of the available participants (e.g. "דני" matches "דני הוכמן", "טלי" matches "טלי קרן")
-- Always try to identify the responsible person from context (who was asked to do something)
-- For relative dates: "מחר" = tomorrow, "יום ראשון הבא" = next Sunday, "עד סוף השבוע" = this Friday, "בעוד שבוע" = +7 days
-- If a specific date is mentioned like "עד ה-23" use the current month and year
-- If no date is mentioned but urgency is implied, default to 7 days from meeting date
-- Keep description concise but complete, in professional Hebrew
-- Return ONLY the JSON object, no other text`;
-
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a Hebrew meeting task parser. Extract task information from spoken Hebrew text.
+Return a JSON object with these fields:
+- "description": The actual task description (clean, without date/owner info)
+- "owner": The person responsible (if mentioned). Common patterns: "באחריות X", "X צריך", "X יבדוק", "של X"
+- "dueDate": Due date in YYYY-MM-DD format (if mentioned). Parse Hebrew dates like "ה-23 למרץ 2026", "עד סוף החודש", "עד יום שלישי", ordinal words like "הראשון", "השני", months like "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר". Today is ${new Date().toISOString().split('T')[0]}.
+
+ONLY return valid JSON. No markdown, no explanation.
+If you can't extract a field, omit it from the JSON.
+The description should be CLEAN — remove the date and owner references from it.`
+          },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.1,
         max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
-    const claudeData = await claudeRes.json();
-
-    if (claudeData.error) {
-      console.error('Claude API error:', claudeData.error);
-      return res.status(500).json({ error: 'Claude API error', details: claudeData.error });
+    const data = await response.json();
+    if (data.error) {
+      console.error('OpenAI error:', data.error);
+      return res.status(500).json({ error: data.error.message });
     }
 
-    const responseText = claudeData.content[0].text.trim();
-    // Extract JSON from response (handle possible markdown wrapping)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return res.status(500).json({ error: 'Failed to parse Claude response', raw: responseText });
-    }
+    const content = data.choices[0].message.content.trim();
+    const jsonStr = content.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
+    const parsed = JSON.parse(jsonStr);
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    res.json(parsed);
+    res.json({
+      description: parsed.description || text,
+      owner: parsed.owner || '',
+      dueDate: parsed.dueDate || '',
+    });
   } catch (err) {
-    console.error('Error parsing task:', err);
-    res.status(500).json({ error: 'Failed to parse task' });
+    console.error('Parse error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

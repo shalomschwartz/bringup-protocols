@@ -1,15 +1,10 @@
 // ── State ──
 const state = {
   projects: [],
-  users: [],
   selectedProject: null,
-  participants: [],   // { id, name, role, selected, color }
-  externalContacts: [],  // { id, name, role, group, selected }
   tasks: [],          // { desc, owner, date }
   currentStep: 1,
 };
-
-const AVATAR_COLORS = ['av-g', 'av-b', 'av-o', 'av-p'];
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
@@ -165,75 +160,7 @@ async function createNewProject() {
   }
 }
 
-// ── Screen 2: Participants ──
-function buildParticipantsList() {
-  state.participants = [];
-
-  // Add workspace users from Monday.com directory
-  state.users.forEach((u, i) => {
-    state.participants.push({
-      id: 'user-' + u.id,
-      name: u.name,
-      role: '',
-      email: u.email,
-      selected: u.name.includes('דני הוכמן'),
-      color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-    });
-  });
-
-  renderParticipants();
-}
-
-function renderParticipants() {
-  const list = document.getElementById('participants-list');
-  list.innerHTML = '';
-
-  state.participants.forEach((p, idx) => {
-    const initial = p.name.charAt(0);
-    const row = document.createElement('div');
-    row.className = 'participant-row';
-    row.innerHTML = `
-      <div class="chk ${p.selected ? '' : 'chk-off'}" onclick="toggleParticipant(${idx})">
-        ${p.selected ? '<svg viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
-      </div>
-      <div class="avatar ${p.color}">${initial}</div>
-      <div style="flex:1;direction:rtl;">
-        <div class="pname">${p.name}</div>
-        ${p.role ? '<div class="prole">' + p.role + '</div>' : ''}
-      </div>
-    `;
-    list.appendChild(row);
-  });
-}
-
-function toggleParticipant(idx) {
-  state.participants[idx].selected = !state.participants[idx].selected;
-  renderParticipants();
-}
-
-function addParticipant() {
-  const nameEl = document.getElementById('new-participant-name');
-  const roleEl = document.getElementById('new-participant-role');
-  const name = nameEl.value.trim();
-  const role = roleEl.value.trim();
-
-  if (!name) return;
-
-  state.participants.push({
-    id: 'custom-' + Date.now(),
-    name,
-    role,
-    email: '',
-    selected: true,
-    color: AVATAR_COLORS[state.participants.length % AVATAR_COLORS.length],
-  });
-
-  nameEl.value = '';
-  roleEl.value = '';
-  renderParticipants();
-}
-
-// ── Screen 3: Tasks ──
+// ── Screen 2: Tasks ──
 let recOn = false;
 let manualOn = false;
 let recognition = null;
@@ -323,6 +250,31 @@ function stopDescMic() {
     try { micRecognition.stop(); } catch (e) {}
     micRecognition = null;
   }
+
+  // Send transcribed text to AI for parsing
+  var descField = document.getElementById('task-desc');
+  var spokenText = (descField.value || '').trim();
+  if (!spokenText) return;
+
+  var participantsField = document.getElementById('meeting-participants');
+  var participantsText = participantsField ? participantsField.value : '';
+
+  fetch('/api/parse-task', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: spokenText, participants: participantsText }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data && !data.error) {
+      if (data.description) descField.value = data.description;
+      if (data.owner) document.getElementById('task-owner').value = data.owner;
+      if (data.dueDate) document.getElementById('task-date').value = data.dueDate;
+    }
+  })
+  .catch(function(err) {
+    console.error('AI parse failed, keeping raw text:', err);
+  });
 }
 
 function cancelDescMic() {
@@ -523,8 +475,8 @@ async function stopRecording() {
   setRecState('processing');
 
   try {
-    const selectedParticipants = state.participants.filter(p => p.selected);
-    const participantNames = selectedParticipants.map(p => p.name);
+    const participantsField = document.getElementById('meeting-participants');
+    const participantsText = participantsField ? participantsField.value : '';
     const meetingDate = document.getElementById('meeting-date').value;
 
     let parsed = null;
@@ -534,7 +486,7 @@ async function stopRecording() {
       const res = await fetch('/api/parse-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: spokenText, participants: participantNames, meetingDate }),
+        body: JSON.stringify({ text: spokenText, participants: participantsText }),
       });
       const data = await res.json();
       if (!data.error && data.description) {
@@ -546,20 +498,11 @@ async function stopRecording() {
 
     // Fallback: local text parsing if AI failed
     if (!parsed) {
+      var participantNames = participantsText.split(',').map(function(n) { return n.trim(); }).filter(Boolean);
       parsed = localParseTask(spokenText, participantNames, meetingDate);
     }
 
-    // Find the matching participant to get their Monday user ID
     const ownerName = parsed.owner || '';
-    let ownerId = '';
-    if (ownerName) {
-      const matchedParticipant = selectedParticipants.find(p =>
-        p.name === ownerName || p.name.includes(ownerName) || ownerName.includes(p.name)
-      );
-      if (matchedParticipant && matchedParticipant.id.startsWith('user-')) {
-        ownerId = matchedParticipant.id.replace('user-', '');
-      }
-    }
 
     // Auto-add the task directly — zero keyboard interaction
     // Clean the description: strip date/owner text that shouldn't be in the task content
@@ -568,7 +511,6 @@ async function stopRecording() {
     state.tasks.push({
       desc: cleanDesc,
       owner: ownerName,
-      ownerId: ownerId,
       date: parsed.dueDate || '',
     });
 
@@ -588,7 +530,7 @@ async function stopRecording() {
   } catch (err) {
     // Last resort: add raw text as task
     console.error('Task parsing completely failed:', err);
-    state.tasks.push({ desc: spokenText, owner: '', ownerId: '', date: '' });
+    state.tasks.push({ desc: spokenText, owner: '', date: '' });
     renderTasks();
     setRecState('idle');
   }
@@ -607,9 +549,6 @@ function toggleManualTask() {
   if (recOn) {
     if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
     recOn = false;
-    document.getElementById('recbtn').classList.remove('recording');
-    document.getElementById('rectxt').textContent = '🎙 הקלט משימה';
-    document.getElementById('rec-status').style.display = 'none';
   }
 
   manualOn = !manualOn;
@@ -620,13 +559,8 @@ function toggleManualTask() {
     descField.value = '';
     descField.placeholder = 'תאר את המשימה...';
     descField.classList.remove('transcribing');
-    // Default date to today
     document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-    // Default owner to דני הוכמן
-    var ownerSel = document.getElementById('task-owner');
-    for (var i = 0; i < ownerSel.options.length; i++) {
-      if (ownerSel.options[i].text.includes('דני הוכמן')) { ownerSel.selectedIndex = i; break; }
-    }
+    document.getElementById('task-owner').value = 'דני הוכמן';
     descField.focus();
   }
 }
@@ -636,97 +570,6 @@ function cancelManualTask() {
   document.getElementById('rec-form').style.display = 'none';
   document.getElementById('task-desc').value = '';
   document.getElementById('task-date').value = '';
-}
-
-function buildExternalContactsList(filter) {
-  const container = document.getElementById('external-participants-list');
-  if (!container) return;
-  if (!state.externalContacts.length) {
-    container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">אין אנשי קשר חיצוניים</div>';
-    return;
-  }
-  const q = (filter || '').trim().toLowerCase();
-  const filtered = state.externalContacts
-    .map((c, i) => ({ ...c, idx: i }))
-    .filter(c => !q || c.name.toLowerCase().startsWith(q) || c.name.split(' ').some(w => w.toLowerCase().startsWith(q)));
-
-  if (!filtered.length) {
-    container.innerHTML = '<div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">לא נמצאו תוצאות</div>';
-    return;
-  }
-  container.innerHTML = filtered.map(c => `
-    <div class="participant-row" onclick="toggleExtContact(${c.idx})" style="cursor:pointer;">
-      <div class="chk ${c.selected ? '' : 'chk-off'}" id="ext-chk-${c.idx}">
-        ${c.selected ? '<svg viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
-      </div>
-      <div class="avatar av-o">${c.name.charAt(0)}</div>
-      <div style="flex:1;direction:rtl;"><div class="pname">${c.name}</div><div class="prole">${c.role || c.group || ''}</div></div>
-    </div>
-  `).join('');
-}
-
-function filterExternalContacts() {
-  const q = document.getElementById('ext-search')?.value || '';
-  buildExternalContactsList(q);
-}
-
-function toggleExtContact(idx) {
-  state.externalContacts[idx].selected = !state.externalContacts[idx].selected;
-  buildExternalContactsList();
-  buildTaskOwnerDropdown();
-}
-
-async function addNewContact() {
-  const name = document.getElementById('new-contact-name').value.trim();
-  const phone = document.getElementById('new-contact-phone').value.trim();
-  const email = document.getElementById('new-contact-email').value.trim();
-  if (!name) return alert('נא להזין שם');
-
-  const btn = document.querySelector('#add-contact-form .btn-primary');
-  btn.textContent = 'מוסיף...';
-  btn.disabled = true;
-
-  try {
-    const res = await fetch('/api/contacts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email }),
-    });
-    const newContact = await res.json();
-    if (newContact.error) throw new Error(newContact.error);
-
-    state.externalContacts.push({
-      id: newContact.id, name: newContact.name || name, role: '', group: '', selected: true,
-    });
-    buildExternalContactsList();
-    buildTaskOwnerDropdown();
-
-    document.getElementById('new-contact-name').value = '';
-    document.getElementById('new-contact-phone').value = '';
-    document.getElementById('new-contact-email').value = '';
-    document.getElementById('add-contact-form').style.display = 'none';
-  } catch (err) {
-    console.error('Failed to add contact:', err);
-    alert('שגיאה בהוספת איש קשר');
-  } finally {
-    btn.textContent = '+ הוסף';
-    btn.disabled = false;
-  }
-}
-
-function buildTaskOwnerDropdown() {
-  const sel = document.getElementById('task-owner');
-  sel.innerHTML = '';
-  const selected = state.participants.filter(p => p.selected);
-  selected.forEach(p => {
-    const opt = document.createElement('option');
-    const mondayId = p.id.startsWith('user-') ? p.id.replace('user-', '') : '';
-    opt.value = p.name;
-    opt.dataset.userId = mondayId;
-    opt.textContent = p.name;
-    sel.appendChild(opt);
-  });
-  // Only internal participants can be task owners (no external contacts)
 }
 
 function addTask() {
