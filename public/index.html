@@ -82,9 +82,22 @@
   <div class="screen" id="screen2">
     <div class="rec-form" id="rec-form" style="display:block;">
       <div class="label">תיאור המשימה</div>
-      <div style="display:flex;gap:6px;align-items:flex-start;direction:rtl;">
-        <textarea class="input" id="task-desc" rows="2" style="resize:none;margin-bottom:8px;flex:1;" placeholder="תאר את המשימה..."></textarea>
+      <div style="position:relative;direction:rtl;margin-bottom:8px;">
+        <textarea class="input" id="task-desc" rows="2" style="resize:none;margin-bottom:0;padding-left:46px;" placeholder="תאר את המשימה..."></textarea>
         <button type="button" id="mic-btn" class="mic-btn" onclick="toggleDescMic()">🎙</button>
+        <!-- WhatsApp-style recording overlay -->
+        <div id="mic-recording-bar" class="wa-rec-bar" style="display:none;">
+          <button type="button" class="wa-rec-delete" onclick="cancelDescMic()">🗑️</button>
+          <div class="wa-rec-center">
+            <div class="wa-rec-timer" id="mic-timer">0:00</div>
+            <div class="wa-rec-waveform">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <button type="button" class="wa-rec-send" onclick="stopDescMic()">✓</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;">
         <div style="flex:1;">

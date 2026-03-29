@@ -242,9 +242,11 @@ let fullTranscript = '';
 // Check browser support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-// ── Inline mic button for speech-to-text in description field ──
+// ── WhatsApp-style mic recording for task description ──
 let micActive = false;
 let micRecognition = null;
+let micTimerInterval = null;
+let micSeconds = 0;
 
 function toggleDescMic() {
   if (micActive) {
@@ -260,18 +262,28 @@ function startDescMic() {
     return;
   }
   micActive = true;
+
+  // Show WhatsApp-style recording bar
+  var bar = document.getElementById('mic-recording-bar');
   var btn = document.getElementById('mic-btn');
-  btn.classList.add('mic-active');
-  btn.textContent = '⏹';
+  if (bar) bar.style.display = 'flex';
+  if (btn) btn.style.display = 'none';
+
+  // Start timer
+  micSeconds = 0;
+  updateMicTimer();
+  micTimerInterval = setInterval(function() {
+    micSeconds++;
+    updateMicTimer();
+  }, 1000);
 
   var descField = document.getElementById('task-desc');
+  var existingText = descField.value ? descField.value + ' ' : '';
 
   micRecognition = new SpeechRecognition();
   micRecognition.lang = 'he-IL';
   micRecognition.continuous = true;
   micRecognition.interimResults = true;
-
-  var existingText = descField.value ? descField.value + ' ' : '';
 
   micRecognition.onresult = function(event) {
     var transcript = '';
@@ -299,15 +311,33 @@ function startDescMic() {
 
 function stopDescMic() {
   micActive = false;
+  clearInterval(micTimerInterval);
+
+  // Hide recording bar, show mic button
+  var bar = document.getElementById('mic-recording-bar');
   var btn = document.getElementById('mic-btn');
-  if (btn) {
-    btn.classList.remove('mic-active');
-    btn.textContent = '🎙';
-  }
+  if (bar) bar.style.display = 'none';
+  if (btn) btn.style.display = 'flex';
+
   if (micRecognition) {
     try { micRecognition.stop(); } catch (e) {}
     micRecognition = null;
   }
+}
+
+function cancelDescMic() {
+  // Stop recording and clear the text
+  var descField = document.getElementById('task-desc');
+  stopDescMic();
+  descField.value = '';
+}
+
+function updateMicTimer() {
+  var el = document.getElementById('mic-timer');
+  if (!el) return;
+  var m = Math.floor(micSeconds / 60);
+  var s = micSeconds % 60;
+  el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function setRecState(state) {
