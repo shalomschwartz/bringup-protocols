@@ -340,6 +340,74 @@ function updateMicTimer() {
   el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
 }
 
+// ── Participants mic recording ──
+let partMicActive = false;
+let partMicRecognition = null;
+let partMicTimer = null;
+let partMicSeconds = 0;
+
+function toggleParticipantsMic() {
+  if (partMicActive) { stopParticipantsMic(); } else { startParticipantsMic(); }
+}
+
+function startParticipantsMic() {
+  if (!SpeechRecognition) { alert('הדפדפן לא תומך בהקלטה. נסה Chrome.'); return; }
+  partMicActive = true;
+  var bar = document.getElementById('mic-participants-bar');
+  var btn = document.getElementById('mic-btn-participants');
+  if (bar) bar.style.display = 'flex';
+  if (btn) btn.style.display = 'none';
+  partMicSeconds = 0;
+  updatePartTimer();
+  partMicTimer = setInterval(function() { partMicSeconds++; updatePartTimer(); }, 1000);
+
+  var field = document.getElementById('meeting-participants');
+  var existing = field.value ? field.value + ', ' : '';
+
+  partMicRecognition = new SpeechRecognition();
+  partMicRecognition.lang = 'he-IL';
+  partMicRecognition.continuous = true;
+  partMicRecognition.interimResults = true;
+
+  partMicRecognition.onresult = function(event) {
+    var transcript = '';
+    for (var i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    field.value = existing + transcript;
+  };
+  partMicRecognition.onend = function() {
+    if (partMicActive) { try { partMicRecognition.start(); } catch (e) {} }
+  };
+  partMicRecognition.onerror = function(e) {
+    if (e.error !== 'no-speech' && e.error !== 'aborted') { stopParticipantsMic(); }
+  };
+  try { partMicRecognition.start(); } catch (e) { stopParticipantsMic(); }
+}
+
+function stopParticipantsMic() {
+  partMicActive = false;
+  clearInterval(partMicTimer);
+  var bar = document.getElementById('mic-participants-bar');
+  var btn = document.getElementById('mic-btn-participants');
+  if (bar) bar.style.display = 'none';
+  if (btn) btn.style.display = 'flex';
+  if (partMicRecognition) { try { partMicRecognition.stop(); } catch (e) {} partMicRecognition = null; }
+}
+
+function cancelParticipantsMic() {
+  stopParticipantsMic();
+  document.getElementById('meeting-participants').value = 'דני הוכמן';
+}
+
+function updatePartTimer() {
+  var el = document.getElementById('mic-participants-timer');
+  if (!el) return;
+  var m = Math.floor(partMicSeconds / 60);
+  var s = partMicSeconds % 60;
+  el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+}
+
 function setRecState(state) {
   const area = document.getElementById('rec-area');
   area.className = 'rec-area rec-' + state;
@@ -785,15 +853,9 @@ function buildPreview() {
     'פרוטוקול פגישה' + (proj ? ' — ' + proj.name : '');
   document.getElementById('preview-date').textContent = date ? formatDateHe(date) : '';
   document.getElementById('preview-location').textContent = location || '';
-  // Auto-collect participants from task owners + recorder
-  var participantNames = ['דני הוכמן'];
-  state.tasks.forEach(function(t) {
-    if (t.owner && participantNames.indexOf(t.owner) === -1) {
-      participantNames.push(t.owner);
-    }
-  });
-  document.getElementById('preview-participants').textContent =
-    participantNames.join(', ');
+  // Get participants from the input field
+  var participantsText = (document.getElementById('meeting-participants') || {}).value || 'דני הוכמן';
+  document.getElementById('preview-participants').textContent = participantsText;
 
   // Show summary if provided
   const summaryVal = document.getElementById('meeting-summary').value.trim();
@@ -840,13 +902,9 @@ function storeProtocolData() {
   const phase = proj?.columns?.portfolio_project_step?.text || '';
   const recorder = 'דני הוכמן';
 
-  // Auto-collect participants from task owners + recorder
-  var participantNames = ['דני הוכמן'];
-  state.tasks.forEach(function(t) {
-    if (t.owner && participantNames.indexOf(t.owner) === -1) {
-      participantNames.push(t.owner);
-    }
-  });
+  // Get participants from input field
+  var participantsText = (document.getElementById('meeting-participants') || {}).value || 'דני הוכמן';
+  var participantNames = participantsText.split(',').map(function(n) { return n.trim(); }).filter(function(n) { return n; });
 
   const protocolData = {
     projectName: proj ? proj.name : '',

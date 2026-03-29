@@ -80,6 +80,25 @@
 
   <!-- SCREEN 2: Tasks -->
   <div class="screen" id="screen2">
+    <!-- Participants box -->
+    <div style="background:#f9f9f7;border-radius:8px;border:0.5px solid rgba(0,0,0,0.1);padding:12px;margin-bottom:12px;direction:rtl;">
+      <div class="label" style="font-weight:500;color:#1a2744;">משתתפי הפגישה</div>
+      <div style="position:relative;">
+        <input type="text" class="input" id="meeting-participants" style="margin-bottom:0;padding-left:46px;" placeholder="דני הוכמן, טלי קרן, אמיר..." value="דני הוכמן" />
+        <button type="button" id="mic-btn-participants" class="mic-btn" onclick="toggleParticipantsMic()" style="top:6px;">🎙</button>
+        <div id="mic-participants-bar" class="wa-rec-bar" style="display:none;">
+          <button type="button" class="wa-rec-delete" onclick="cancelParticipantsMic()">🗑️</button>
+          <div class="wa-rec-center">
+            <div class="wa-rec-timer" id="mic-participants-timer">0:00</div>
+            <div class="wa-rec-waveform">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <button type="button" class="wa-rec-send" onclick="stopParticipantsMic()">✓</button>
+        </div>
+      </div>
+    </div>
     <div class="rec-form" id="rec-form" style="display:block;">
       <div class="label">תיאור המשימה</div>
       <div style="position:relative;direction:rtl;margin-bottom:8px;">
