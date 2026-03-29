@@ -396,18 +396,19 @@ body {
   font-weight: 500;
 }
 
-/* Mic button — sits inside textarea container */
+/* Mic button — sits inside input container */
 .mic-btn {
   position: absolute;
-  left: 8px;
-  top: 8px;
-  width: 36px;
-  height: 36px;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: none;
-  background: #25D366;
-  color: #fff;
-  font-size: 16px;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  color: #1a2744;
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -416,10 +417,10 @@ body {
   transition: all 0.2s;
   z-index: 2;
 }
-.mic-btn:hover { background: #1fb855; }
+.mic-btn:hover { border-color: #1a2744; }
 .mic-btn-right {
   left: auto;
-  right: 8px;
+  right: 6px;
 }
 
 /* WhatsApp-style recording bar */
@@ -427,7 +428,7 @@ body {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background: #fff;
-  border: 1.5px solid #25D366;
+  border: 1.5px solid #1a2744;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -469,7 +470,7 @@ body {
 .wa-rec-waveform span {
   display: inline-block;
   width: 3px;
-  background: #25D366;
+  background: #1a2744;
   border-radius: 2px;
   animation: wa-wave 0.8s ease-in-out infinite;
 }
@@ -496,7 +497,7 @@ body {
   width: 36px; height: 36px;
   border-radius: 50%;
   border: none;
-  background: #25D366;
+  background: #1a2744;
   color: #fff;
   font-size: 18px;
   font-weight: bold;
@@ -504,7 +505,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.wa-rec-send:hover { background: #1fb855; }
+.wa-rec-send:hover { background: #0f1a30; }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .rec-form {
