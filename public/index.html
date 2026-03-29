@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <!-- Step bar -->
+  <!-- Step bar — 3 steps -->
   <div class="step-bar">
     <div class="step active" data-step="1" onclick="goStep(1)">
       <div class="step-dot">1</div>
@@ -25,14 +25,10 @@
     </div>
     <div class="step" data-step="2" onclick="goStep(2)">
       <div class="step-dot">2</div>
-      משתתפים
+      משימות
     </div>
     <div class="step" data-step="3" onclick="goStep(3)">
       <div class="step-dot">3</div>
-      משימות
-    </div>
-    <div class="step" data-step="4" onclick="goStep(4)">
-      <div class="step-dot">4</div>
       אישור
     </div>
   </div>
@@ -82,36 +78,8 @@
     </div>
   </div>
 
-  <!-- SCREEN 2: Participants -->
+  <!-- SCREEN 2: Tasks -->
   <div class="screen" id="screen2">
-    <div class="section-title">משתתפים מתוך הצוות</div>
-    <div id="participants-list"></div>
-    <div style="border-top:0.5px solid rgba(0,0,0,0.08);margin:14px 0;"></div>
-    <div class="section-title">משתתפים חיצוניים</div>
-    <input class="input" id="ext-search" placeholder="🔍 חיפוש לפי שם..." oninput="filterExternalContacts()" style="margin-bottom:8px;" />
-    <div id="external-participants-list" style="max-height:200px;overflow-y:auto;">
-      <div style="text-align:center;color:#999;font-size:13px;padding:10px 0;">טוען...</div>
-    </div>
-    <div id="add-contact-form" style="display:none;background:#f9f9f7;border-radius:8px;border:0.5px solid rgba(0,0,0,0.1);padding:12px;margin-top:8px;direction:rtl;">
-      <div style="display:flex;gap:8px;">
-        <input class="input" id="new-contact-name" placeholder="שם" style="flex:1;margin-bottom:0;" />
-        <input class="input" id="new-contact-phone" placeholder="טלפון" style="flex:1;margin-bottom:0;" />
-      </div>
-      <input class="input" id="new-contact-email" placeholder="אימייל" style="margin-top:8px;margin-bottom:0;" />
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-primary" style="flex:1;margin-bottom:0;" onclick="addNewContact()">+ הוסף</button>
-        <button class="btn-back" style="flex:0 0 auto;margin-bottom:0;padding:10px 16px;" onclick="document.getElementById('add-contact-form').style.display='none'">✕</button>
-      </div>
-    </div>
-    <button class="add-btn" style="margin-top:8px;" onclick="document.getElementById('add-contact-form').style.display='block'">+ הוסף איש קשר חדש</button>
-    <div class="nav-row">
-      <button class="btn-back" onclick="goStep(1)">חזרה →</button>
-      <button class="btn-next" onclick="goStep(3)">← הבא</button>
-    </div>
-  </div>
-
-  <!-- SCREEN 3: Tasks -->
-  <div class="screen" id="screen3">
     <div class="rec-form" id="rec-form" style="display:block;">
       <div class="label">תיאור המשימה</div>
       <div style="display:flex;gap:6px;align-items:flex-start;direction:rtl;">
@@ -121,7 +89,7 @@
       <div style="display:flex;gap:8px;">
         <div style="flex:1;">
           <div class="label">אחריות</div>
-          <select class="select" id="task-owner" style="margin-bottom:0;"></select>
+          <input type="text" class="input" id="task-owner" style="margin-bottom:0;" value="דן דורון" placeholder="שם האחראי" />
         </div>
         <div style="flex:1;">
           <div class="label">תאריך יעד</div>
@@ -137,13 +105,13 @@
       <div style="text-align:center;color:#999;font-size:13px;padding:20px 0;">אין משימות עדיין</div>
     </div>
     <div class="nav-row">
-      <button class="btn-back" onclick="goStep(2)">חזרה →</button>
-      <button class="btn-next" onclick="goStep(4)">← הבא</button>
+      <button class="btn-back" onclick="goStep(1)">חזרה →</button>
+      <button class="btn-next" onclick="goStep(3)">← הבא</button>
     </div>
   </div>
 
-  <!-- SCREEN 4: Confirmation -->
-  <div class="screen" id="screen4">
+  <!-- SCREEN 3: Confirmation -->
+  <div class="screen" id="screen3">
     <!-- Summary card -->
     <div class="confirm-card">
       <div class="confirm-title" id="preview-title">פרוטוקול פגישה</div>
@@ -172,7 +140,7 @@
     </button>
     <div id="send-status" style="display:none;direction:rtl;text-align:center;font-size:13px;padding:10px 0;border-radius:8px;margin-bottom:8px;"></div>
     <div class="nav-row">
-      <button class="btn-back" onclick="goStep(3)">חזרה →</button>
+      <button class="btn-back" onclick="goStep(2)">חזרה →</button>
       <button class="btn-back" style="visibility:hidden;">→</button>
     </div>
   </div>

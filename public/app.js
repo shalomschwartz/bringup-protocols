@@ -29,22 +29,13 @@ async function loadData() {
   document.getElementById('screen1').classList.remove('active');
 
   try {
-    const [projects, users, contacts] = await Promise.all([
+    const [projects] = await Promise.all([
       fetch('/api/projects').then(r => r.json()),
-      fetch('/api/users').then(r => r.json()),
-      fetch('/api/contacts').then(r => r.json()).catch(() => []),
     ]);
 
     state.projects = projects;
-    state.users = users;
-    state.externalContacts = (contacts || []).map(c => ({
-      id: c.id, name: c.name, role: c.role || '', group: c.group || '', selected: false,
-    }));
 
     populateProjectDropdown();
-    buildParticipantsList();
-    buildExternalContactsList();
-    buildTaskOwnerDropdown();
   } catch (err) {
     console.error('Failed to load data:', err);
   } finally {
@@ -55,10 +46,10 @@ async function loadData() {
 
 // ── Step Navigation ──
 function goStep(n) {
-  if (n === 4) buildPreview();
+  if (n === 3) buildPreview();
   state.currentStep = n;
 
-  for (let i = 1; i <= 4; i++) {
+  for (let i = 1; i <= 3; i++) {
     const sc = document.getElementById('screen' + i);
     if (sc) sc.classList.toggle('active', i === n);
 
@@ -73,13 +64,9 @@ function goStep(n) {
     }
   }
 
-  if (n === 3) {
-    buildTaskOwnerDropdown();
+  if (n === 2) {
     // Set defaults: דן דורון + today
-    var ownerSel = document.getElementById('task-owner');
-    for (var j = 0; j < ownerSel.options.length; j++) {
-      if (ownerSel.options[j].text.includes('דן דורון')) { ownerSel.selectedIndex = j; break; }
-    }
+    document.getElementById('task-owner').value = 'דן דורון';
     document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('task-desc').value = '';
     document.getElementById('task-desc').focus();
@@ -646,10 +633,7 @@ function buildTaskOwnerDropdown() {
 
 function addTask() {
   const desc = document.getElementById('task-desc').value.trim();
-  const ownerSel = document.getElementById('task-owner');
-  const owner = ownerSel.value;
-  const selectedOpt = ownerSel.options[ownerSel.selectedIndex];
-  const ownerId = selectedOpt ? selectedOpt.dataset.userId || '' : '';
+  const owner = document.getElementById('task-owner').value.trim();
   const date = document.getElementById('task-date').value;
 
   if (!desc) {
@@ -661,7 +645,7 @@ function addTask() {
     return;
   }
 
-  state.tasks.push({ desc, owner, ownerId, date });
+  state.tasks.push({ desc, owner, date });
 
   renderTasks();
 
@@ -673,13 +657,7 @@ function addTask() {
   descField.style.boxShadow = '0 0 6px rgba(31,140,95,0.3)';
   setTimeout(function() { descField.style.border = ''; descField.style.boxShadow = ''; }, 2000);
   document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
-  // Reset owner to דן דורון
-  var sel = document.getElementById('task-owner');
-  for (var i = 0; i < sel.options.length; i++) {
-    if (sel.options[i].text.includes('דן דורון')) { sel.selectedIndex = i; break; }
-  }
-  manualOn = true;
-  document.getElementById('rec-form').style.display = 'block';
+  document.getElementById('task-owner').value = 'דן דורון';
   descField.focus();
 }
 
@@ -712,7 +690,7 @@ function renderTasks() {
           <div style="display:flex;gap:8px;">
             <div style="flex:1;">
               <div class="label">אחריות</div>
-              <select class="select" id="edit-owner-${idx}" style="margin-bottom:0;"></select>
+              <input type="text" class="input" id="edit-owner-${idx}" value="${escapeHtml(t.owner || '')}" placeholder="שם האחראי" style="margin-bottom:0;" />
             </div>
             <div style="flex:1;">
               <div class="label">תאריך יעד</div>
@@ -725,27 +703,6 @@ function renderTasks() {
           </div>
         </div>
       `;
-      // Populate owner dropdown after DOM is ready
-      setTimeout(() => {
-        const sel = document.getElementById('edit-owner-' + idx);
-        if (sel) {
-          const selected = state.participants.filter(p => p.selected);
-          selected.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.name;
-            opt.textContent = p.name;
-            sel.appendChild(opt);
-          });
-          // Also add custom option if owner isn't in participants
-          if (t.owner && !selected.find(p => p.name === t.owner)) {
-            const opt = document.createElement('option');
-            opt.value = t.owner;
-            opt.textContent = t.owner;
-            sel.appendChild(opt);
-          }
-          sel.value = t.owner || '';
-        }
-      }, 0);
     } else {
       // View mode
       row.innerHTML = `
@@ -785,10 +742,6 @@ function saveTaskEdit(idx) {
   state.tasks[idx].owner = owner;
   state.tasks[idx].date = date;
 
-  // Update owner ID
-  const matchedP = state.participants.find(p => p.selected && p.name === owner);
-  state.tasks[idx].ownerId = matchedP && matchedP.id.startsWith('user-') ? matchedP.id.replace('user-', '') : '';
-
   delete state.tasks[idx]._editing;
   renderTasks();
 }
@@ -798,16 +751,19 @@ function buildPreview() {
   const proj = state.selectedProject;
   const date = document.getElementById('meeting-date').value;
   const location = document.getElementById('meeting-location').value;
-  const selected = state.participants.filter(p => p.selected);
-
   document.getElementById('preview-title').textContent =
     'פרוטוקול פגישה' + (proj ? ' — ' + proj.name : '');
   document.getElementById('preview-date').textContent = date ? formatDateHe(date) : '';
   document.getElementById('preview-location').textContent = location || '';
-  const extSelected = state.externalContacts.filter(c => c.selected);
-  const allNames = [...selected.map(p => p.name), ...extSelected.map(c => c.name)];
+  // Auto-collect participants from task owners + recorder
+  var participantNames = ['דני הוכמן'];
+  state.tasks.forEach(function(t) {
+    if (t.owner && participantNames.indexOf(t.owner) === -1) {
+      participantNames.push(t.owner);
+    }
+  });
   document.getElementById('preview-participants').textContent =
-    allNames.join(', ') || 'לא נבחרו';
+    participantNames.join(', ');
 
   // Show summary if provided
   const summaryVal = document.getElementById('meeting-summary').value.trim();
@@ -851,16 +807,23 @@ function storeProtocolData() {
   const date = document.getElementById('meeting-date').value;
   const location = document.getElementById('meeting-location').value;
   const summary = document.getElementById('meeting-summary').value;
-  const selected = state.participants.filter(p => p.selected);
   const phase = proj?.columns?.portfolio_project_step?.text || '';
   const recorder = 'דני הוכמן';
+
+  // Auto-collect participants from task owners + recorder
+  var participantNames = ['דני הוכמן'];
+  state.tasks.forEach(function(t) {
+    if (t.owner && participantNames.indexOf(t.owner) === -1) {
+      participantNames.push(t.owner);
+    }
+  });
 
   const protocolData = {
     projectName: proj ? proj.name : '',
     date,
     location,
     summary,
-    participants: [...selected.map(p => p.name), ...state.externalContacts.filter(c => c.selected).map(c => c.name)],
+    participants: participantNames,
     tasks: state.tasks.map(t => ({ desc: t.desc, owner: t.owner, date: t.date })),
     phase,
     recorder,
@@ -1320,14 +1283,8 @@ async function sendToMonday() {
     const proj = state.selectedProject;
     const date = document.getElementById('meeting-date').value;
     const location = document.getElementById('meeting-location').value;
-    const selected = state.participants.filter(p => p.selected);
-
     const protocolName = 'פרוטוקול' + (proj ? ' — ' + proj.name : '') + ' — ' + formatDateHe(date);
     const summary = document.getElementById('meeting-summary').value;
-
-    // Find recorder's Monday user ID
-    const recorder = selected.length > 0 ? selected[0] : null;
-    const recorderId = recorder && recorder.id.startsWith('user-') ? recorder.id.replace('user-', '') : '';
 
     // 1. Create tasks first to get their IDs
     let taskIds = [];
@@ -1335,7 +1292,6 @@ async function sendToMonday() {
       const tasksPayload = state.tasks.map(t => ({
         name: cleanDescription(t.desc, t.owner),
         owner: t.owner,
-        ownerId: t.ownerId,
         date: t.date,
       }));
 
@@ -1362,9 +1318,7 @@ async function sendToMonday() {
         location,
         summary,
         projectId: proj?.id || '',
-        recorderId,
         taskIds,
-        externalContactIds: state.externalContacts.filter(c => c.selected).map(c => c.id),
       }),
     });
     const protocol = await protocolRes.json();
